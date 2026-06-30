@@ -33,6 +33,12 @@ class Linux {
   /// or by opening the page "RunCommandQueue"
   static List<LinuxCommand> commandQueue = [];
 
+  static bool _isVerboseCommandLoggingEnabled() {
+    final value =
+        Platform.environment["LINUX_ASSISTANT_DEBUG_COMMANDS"]?.toLowerCase();
+    return value == "1" || value == "true" || value == "yes";
+  }
+
   static Future<void> init() async {
     executableFolder = getExecutableFolder();
     homeFolder = getHomeDirectory();
@@ -95,11 +101,15 @@ class Linux {
         arguments.insert(0, "--host");
       }
     }
-    print("Running linux command: $exec with arguments: $arguments");
+    if (_isVerboseCommandLoggingEnabled()) {
+      print("Running linux command: $exec with arguments: $arguments");
+    }
     var result = await Process.run(exec, arguments,
         runInShell: true, environment: environment);
     if (result.stderr is String && result.stderr.toString().isNotEmpty) {
-      print(result.stderr);
+      if (_isVerboseCommandLoggingEnabled()) {
+        print(result.stderr);
+      }
       if (getErrorMessages) {
         String returnValue = result.stdout;
         returnValue += result.stderr;
