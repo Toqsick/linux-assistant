@@ -22,10 +22,10 @@ Search and installation/uninstallation of system packages,yes,yes,yes,yes,yes,ye
 General integration of system package manager,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,-,-,-,-,
 General integration of flatpak,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,-,-,-,-,
 General integration of snapd,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,-,-,-,-,
-Recognition of drive space utilization,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,,,,,
+Recognition of drive space utilization,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,,,,,fixed: crash on Btrfs/overlay mounts (int.tryParse v0.7)
 Change user passwort dialog,yes,-,-,-,-,-,yes,-,no,-,yes,-,,,yes,yes,yes,no,
 open system information,yes,-,-,-,-,-,yes,-,no,-,yes,-,yes,yes,yes,yes,yes,no,
-automatic update check & install of linux assistant,no,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,no,no,no,-,-,-,-,
+automatic update check & install of linux assistant,no,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,no,no,no,-,-,-,-,fixed: version comparison crash on malformed API response (v0.7); fixed: wget fallback to curl (v0.7)
 openAdditionalSoftwareSourcesSettings,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes *,no,no,no,-,-,-,-,*) We can only open gnome-software here
 Change Power Mode,yes,yes,yes,yes,yes,yes,yes,no,yes,?,yes,yes,yes,yes,-,-,-,-,
 Change user profile,yes,-,-,-,yes,-,yes,-,no,-,yes,-,-,-,yes,yes,yes,no,
@@ -36,3 +36,7 @@ setupSnapAndInstallSnapStore,?,yes,yes,yes,yes,yes,yes,yes,yes,no,yes,yes,?,?,-,
 Commands in Searchbar,?,-,-,-,-,-,-,-,-,-,-,-,yes,yes,yes,yes,yes,yes,
 AutomaticRepairOfPackageManager,?,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,no,no,no,-,-,-,-,
 openSoftwareCenter,?,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,
+Process / CPU monitoring,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,fixed: IndexError on zombie processes + off-by-one in process count (v0.7)
+System uptime display,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,fixed: locale-dependent uptime crash (LC_ALL=C) + wrong error field (v0.7)
+CPU load display,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,fixed: FormatException in getCpuThreadCount/getCpuAverageLoad (v0.7)
+Search result loading,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,fixed: prepare() re-fired on every rebuild (initState fix v0.7); fire-and-forget errors now logged
