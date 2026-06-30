@@ -10,15 +10,10 @@ class LinuxAssistantUpdater {
 
   /// Only searches, if the last successful search is 7 days old, otherwise returns false;
   static bool isNewerVersionAvailable() {
-    // Lookup done by WeeklyTasks
-
-    // If we are running as flatpak we don't need to check for updates manually.
     if (Linux.currentenvironment.runningInFlatpak) {
       return false;
     }
 
-    // Return false if we are running on Arch Linux and the user has it not running in flatpak.
-    // We are missing an update mechanism for Arch Linux at the current time.
     if (!Linux.currentenvironment.runningInFlatpak &&
         [DISTROS.ARCH, DISTROS.MANJARO, DISTROS.ENDEAVOUR]
             .contains(Linux.currentenvironment.distribution)) {
@@ -28,31 +23,35 @@ class LinuxAssistantUpdater {
     String newestVersion = ConfigHandler().getValueUnsafe(
         "newest-linux-assistant-version", CURRENT_LINUX_ASSISTANT_VERSION);
 
-    // If reading the version file failed, just return false. Else the version
-    // check will crash.
     return CURRENT_LINUX_ASSISTANT_VERSION.isEmpty
         ? false
         : isVersionGreaterThanCurrent(newestVersion);
   }
 
-  /// example for [version] would be: "3.4.19"
+  /// example for [version] would be: "0.7.0"
   static bool isVersionGreaterThanCurrent(String version) {
+    // P1: validate format before parsing — assert() is stripped in release builds
+    // and int.parse("") would throw FormatException on malformed API responses.
     List<String> currentVersionList =
         CURRENT_LINUX_ASSISTANT_VERSION.split(".");
-    assert(currentVersionList.length == 3);
     List<String> versionList = version.split(".");
-    assert(versionList.length == 3);
+
+    if (currentVersionList.length != 3 || versionList.length != 3) {
+      print(
+          "Warning: malformed version string — current: $CURRENT_LINUX_ASSISTANT_VERSION, remote: $version");
+      return false;
+    }
 
     for (int i = 0; i < 3; i++) {
-      if (int.parse(versionList[i]) > int.parse(currentVersionList[i])) {
-        return true;
-      } else if (int.parse(versionList[i]) < int.parse(currentVersionList[i])) {
+      final current = int.tryParse(currentVersionList[i]);
+      final remote = int.tryParse(versionList[i]);
+      if (current == null || remote == null) {
+        print("Warning: non-numeric version segment at index $i — skipping update check.");
         return false;
-      } else {
-        // This version index is equal. Look to the indizes after.
       }
+      if (remote > current) return true;
+      if (remote < current) return false;
     }
-    // If they are equal return false.
     return false;
   }
 
@@ -70,9 +69,12 @@ class LinuxAssistantUpdater {
           return;
         }
         String fileName = downloadURL.split("/").last;
+        // P2: prefer curl over wget — curl is available on more distros by default.
+        // Falls back to wget if curl is not found.
         Linux.commandQueue.add(LinuxCommand(
             userId: Linux.currentenvironment.currentUserId,
-            command: "wget $downloadURL -P /tmp/"));
+            command:
+                "curl -fL '$downloadURL' -o /tmp/$fileName || wget '$downloadURL' -O /tmp/$fileName"));
         Linux.commandQueue.add(LinuxCommand(
             userId: 0, command: "/usr/bin/apt install /tmp/$fileName -y"));
       }
@@ -86,9 +88,11 @@ class LinuxAssistantUpdater {
           return;
         }
         String fileName = downloadURL.split("/").last;
+        // P2: prefer curl over wget
         Linux.commandQueue.add(LinuxCommand(
             userId: Linux.currentenvironment.currentUserId,
-            command: "wget $downloadURL -P /tmp/"));
+            command:
+                "curl -fL '$downloadURL' -o /tmp/$fileName || wget '$downloadURL' -O /tmp/$fileName"));
         if (Linux.currentenvironment.installedSoftwareManagers
             .contains(SOFTWARE_MANAGERS.ZYPPER)) {
           Linux.commandQueue.add(LinuxCommand(

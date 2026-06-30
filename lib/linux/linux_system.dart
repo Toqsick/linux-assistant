@@ -21,11 +21,13 @@ abstract class LinuxSystem {
 
   /// Might be inaccurate
   static Future<Uptime> uptime() async {
+    // P2: force LC_ALL=C so uptime output is always in English regardless of system locale
     var cmdResult =
         await CommandHelper.run("/usr/bin/uptime", env: {"LC_ALL": "C"});
 
     if (!cmdResult.success) {
-      throw Exception(cmdResult.output);
+      // P1: throw the actual error message, not the stdout output
+      throw Exception(cmdResult.error);
     }
 
     var values = cmdResult.output.replaceAll(RegExp(r" +"), " ").split(" ");
@@ -52,22 +54,26 @@ abstract class LinuxSystem {
   static Future<int> getCpuThreadCount() async {
     var cmdResult = await CommandHelper.run("/usr/bin/nproc");
     if (!cmdResult.success) {
+      // P1: log error and return safe fallback instead of crashing on int.parse
       print("Error: ${cmdResult.error}");
+      return 1;
     }
-    return int.parse(cmdResult.output);
+    // P1: tryParse with fallback to prevent FormatException on unexpected output
+    return int.tryParse(cmdResult.output.trim()) ?? 1;
   }
 
   /// Returns the average load of the CPU of the last minute
   /// Values are between 0 and 1
   static Future<double> getCpuAverageLoad() async {
-    // Run cat /proc/loadavg
     var cmdResult =
         await CommandHelper.runWithArguments("/usr/bin/cat", ["/proc/loadavg"]);
     if (!cmdResult.success) {
       print("Error: ${cmdResult.error}");
+      return 0.0;
     }
-    double load = double.parse(cmdResult.output.split(" ")[0]);
-    int cpuCount = await getCpuThreadCount();
+    // P1: tryParse with fallback
+    final load = double.tryParse(cmdResult.output.split(" ")[0]) ?? 0.0;
+    final cpuCount = await getCpuThreadCount();
     return load / cpuCount;
   }
 }

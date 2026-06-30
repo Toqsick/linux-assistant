@@ -45,16 +45,21 @@ abstract class LinuxFilesystem {
     for (var line in lines) {
       var values = line.split(" ");
       values.removeWhere((x) => x == "");
+      if (values.length < 6) continue;
       if (devicesRead.contains(values[0]) || values[1].endsWith("M")) {
         continue;
       }
+
+      // P1: use int.tryParse — df -h can return "-" for Use% on Btrfs/overlay mounts
+      final rawPercent = values[4].substring(0, values[4].length - 1);
+      final usedPercent = int.tryParse(rawPercent) ?? 0;
 
       devices.add(DeviceInfo(
           values[0],
           values[1],
           values[2],
           values[3],
-          int.parse(values[4].substring(0, values[4].length - 1)),
+          usedPercent,
           values[5],
           _removableDevices.any((x) => values[5].contains(x))));
 

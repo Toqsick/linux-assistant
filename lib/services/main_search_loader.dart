@@ -19,6 +19,14 @@ class MainSearchLoader extends StatefulWidget {
 class _MainSearchLoaderState extends State<MainSearchLoader> {
   late Future<void> futureVoid;
 
+  @override
+  void initState() {
+    super.initState();
+    // P1: initialise once in initState — build() can be called multiple times
+    // (e.g. theme change, resize) which would restart prepare() on every rebuild.
+    futureVoid = prepare();
+  }
+
   Future<void> prepare() async {
     MainSearch.unregisterHotkeysForKeyboardUse();
 
@@ -26,141 +34,84 @@ class _MainSearchLoaderState extends State<MainSearchLoader> {
     await configHandler.ensureConfigIsLoaded();
     Future clearOldEntries = configHandler.clearOldDatesOfOpenendEntries();
 
-    // prepare Action Entries
-
-    // List<Future<List<ActionEntry>>> futures = [];
-
-    // if (configHandler.getValueUnsafe("search_filter_basic_folders", true)) {
-    //   print("Loading basic folders");
-    //   futures.add(Linux.getAllFolderEntriesOfUser(context).timeout(
-    //       timeoutDuration,
-    //       onTimeout: () =>
-    //           _onTimeoutOfSearchLoadingModule("applicationEntries")));
-    //   // future1 = Linux.getAllFolderEntriesOfUser(context);
-    // }
-
     ActionEntryListService.clearEntries();
 
+    // P2: wrap fire-and-forget calls in unawaited error handlers so exceptions
+    // are logged rather than silently swallowed.
     if (configHandler.getValueUnsafe("search_filter_basic_folders", true)) {
       print("Loading basic folders");
-      Linux.getAllFolderEntriesOfUser(context);
+      Linux.getAllFolderEntriesOfUser(context).catchError((e) {
+        print("Error loading basic folders: $e");
+        return <ActionEntry>[];
+      });
     }
-
-    // if (configHandler.getValueUnsafe("search_filter_applications", true)) {
-    //   print("Loading applications");
-    //   futures.add(Linux.getAllAvailableApplications().timeout(timeoutDuration,
-    //       onTimeout: () =>
-    //           _onTimeoutOfSearchLoadingModule("applicationEntries")));
-    // }
 
     if (configHandler.getValueUnsafe("search_filter_applications", true)) {
       print("Loading applications");
-      Linux.getAllAvailableApplications();
+      Linux.getAllAvailableApplications().catchError((e) {
+        print("Error loading applications: $e");
+        return <ActionEntry>[];
+      });
     }
-
-    // if (configHandler.getValueUnsafe(
-    //     "search_filter_recently_used_files_and_folders", true)) {
-    //   print("Loading recently used files and folders");
-    //   futures.add(Linux.getRecentFiles(context).timeout(timeoutDuration,
-    //       onTimeout: () => _onTimeoutOfSearchLoadingModule("recentFiles")));
-    // }
 
     if (configHandler.getValueUnsafe(
         "search_filter_recently_used_files_and_folders", true)) {
       print("Loading recently used files and folders");
-      Linux.getRecentFiles(context);
+      Linux.getRecentFiles(context).catchError((e) {
+        print("Error loading recent files: $e");
+        return <ActionEntry>[];
+      });
     }
-
-    // if (configHandler.getValueUnsafe(
-    //     "search_filter_favorite_files_and_folder_bookmarks", true)) {
-    //   print("Loading favorite files and folder bookmarks");
-    //   futures.add(Linux.getFavoriteFiles(context).timeout(timeoutDuration,
-    //       onTimeout: () => _onTimeoutOfSearchLoadingModule("favoriteFiles")));
-    // }
 
     if (configHandler.getValueUnsafe(
         "search_filter_favorite_files_and_folder_bookmarks", true)) {
-      Linux.getFavoriteFiles(context);
+      Linux.getFavoriteFiles(context).catchError((e) {
+        print("Error loading favorite files: $e");
+        return <ActionEntry>[];
+      });
     }
-
-    // if (configHandler.getValueUnsafe("search_filter_bookmarks", true)) {
-    //   print("Loading browser bookmarks");
-    //   futures.add(Linux.getBrowserBookmarks(context).timeout(timeoutDuration,
-    //       onTimeout: () =>
-    //           _onTimeoutOfSearchLoadingModule("browserBookmarks")));
-    // }
 
     if (configHandler.getValueUnsafe("search_filter_bookmarks", true)) {
       print("Loading browser bookmarks");
-      Linux.getBrowserBookmarks(context);
+      Linux.getBrowserBookmarks(context).catchError((e) {
+        print("Error loading browser bookmarks: $e");
+        return <ActionEntry>[];
+      });
     }
 
-    // Deinstallation Entries.
-    // if (configHandler.getValueUnsafe(
-    //     "search_filter_uninstall_software", true)) {
-    //   print("Loading uninstall entries");
-    //   futures.add(Linux.getUninstallEntries(context).timeout(timeoutDuration,
-    //       onTimeout: () =>
-    //           _onTimeoutOfSearchLoadingModule("uninstall_entries")));
-    // }
     if (configHandler.getValueUnsafe(
         "search_filter_uninstall_software", true)) {
       print("Loading uninstall entries");
-      Linux.getUninstallEntries(context);
+      Linux.getUninstallEntries(context).catchError((e) {
+        print("Error loading uninstall entries: $e");
+        return <ActionEntry>[];
+      });
     }
 
-    // ActionEntryList returnValue = ActionEntryList(entries: []);
-    // returnValue.entries.addAll(getRecommendations(context));
-    // returnValue.entries.addAll(getBasicEntries(context));
     List<ActionEntry> functionEntries = [];
     functionEntries.addAll(getRecommendations(context));
     functionEntries.addAll(getBasicEntries(context));
 
-    // // Collect all Futures in our returnValue.
-    // for (Future<List<ActionEntry>> future in futures) {
-    //   returnValue.entries.addAll(await future);
-    // }
-
-    // if (configHandler.getValueUnsafe(
-    //     "search_filter_recently_used_files_and_folders", true)) {
-    //   print("Loading recently used files and folders");
-    //   var additionalFolders =
-    //       Linux.getFoldersOfActionEntries(context, ActionEntryListService.getEntries());
-    //   print("Finished: search_filter_recently_used_files_and_folders");
-    //   // returnValue.entries.addAll(additionalFolders);
-    //   ActionEntryListService.addEntries(additionalFolders);
-    // }
-
-    // Remove action entries for specific environments
     print("Removing disabled entries");
     List<ActionEntry> entriesToRemove = [];
     for (ActionEntry entry in functionEntries) {
       if (entry.disableEntryIf != null) {
-        // If the disableEntryIf function of the entry gets true, remove:
         if (entry.disableEntryIf!()) {
           entriesToRemove.add(entry);
         }
       }
     }
     for (ActionEntry entry in entriesToRemove) {
-      // returnValue.entries.remove(entry);
       functionEntries.remove(entry);
     }
     ActionEntryListService.addEntries(functionEntries);
     print("Initiating configHandler");
     await configHandler.setValue("runFirstStartUp", false);
     await clearOldEntries;
-
-    // EntryCache.saveEntries(returnValue.entries);
-
-    // returnValue = EntryCache.loadEntries();
-
-    // return returnValue;
   }
 
   @override
   Widget build(BuildContext context) {
-    futureVoid = prepare();
     return FutureBuilder<dynamic>(
       future: futureVoid,
       builder: (context, snapshot) {

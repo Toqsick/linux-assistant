@@ -17,6 +17,8 @@ abstract class LinuxProcess {
     for (var line in cmdResult.split("\n").skip(1).take(count)) {
       var values = line.split(" ");
       values.removeWhere((x) => x == "");
+      // P1/P3: bounds-check — zombie or malformed lines may have < 2 columns
+      if (values.length < 2) continue;
       processes.add(ProcessStat(values[0], values[1].split("/").last));
     }
 
@@ -27,7 +29,12 @@ abstract class LinuxProcess {
     var cmdResult =
         await Linux.runCommandWithCustomArguments("/usr/bin/ps", ["-e"]);
 
-    return cmdResult.split("\n").skip(1).length;
+    // P3: skip header and trailing empty line
+    return cmdResult
+        .split("\n")
+        .skip(1)
+        .where((l) => l.trim().isNotEmpty)
+        .length;
   }
 
   static Future<List<ProcessStat>> topProcessesByCpu(int count) async =>
