@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-and-analyze:
+    name: Flutter Test & Analyze
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate L10n
+        run: flutter gen-l10n
+
+      - name: Verify L10n artifacts are up-to-date
+        run: |
+          git diff --exit-code lib/l10n/ || (
+            echo "::error::L10n artifacts are out of date. Run 'flutter gen-l10n' and commit the result."
+            exit 1
+          )
+
+      - name: Run tests
+        run: flutter test --reporter expanded
+
+      - name: Run analyzer (warnings/errors as gate)
+        run: flutter analyze --no-fatal-infos
