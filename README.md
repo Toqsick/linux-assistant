@@ -1,6 +1,6 @@
 # linux-assistant
 
-A linux application which is a daily linux helper with powerful integrated search, routines checks and admninistrative tasks. The Project is built with flutter and python.
+A linux application which is a daily linux helper with powerful integrated search, routine checks and administrative tasks. The project is built with Flutter and Python.
 
 ## Requirements
 
@@ -19,7 +19,7 @@ sudo rm /etc/apt/preferences.d/nosnap.pref # (For Linux Mint)
 sudo apt install snapd git
 sudo snap install flutter --classic
 flutter doctor # If command not found: Reboot and try again
-git clone https://github.com/Jean28518/linux-assistant.git
+git clone https://github.com/Toqsick/linux-assistant.git
 cd linux-assistant
 
 # Option 1: Build with flutter manually
@@ -45,7 +45,7 @@ sudo pacman -U linux-assistant-*.pkg.tar.zst
 
 ## Run as flatpak
 
-Repo: <https://github.com/Jean28518/flathub/tree/com.github.jean28518.Linux-Assistant>
+Repo: <https://github.com/Toqsick/flathub/tree/com.github.jean28518.Linux-Assistant>
 
 - Uncomment the archive from the web and use e.g. this local one:
 
@@ -64,7 +64,7 @@ flatpak run io.github.jean28518.Linux-Assistant
 
 ## Features
 
-<https://github.com/Jean28518/linux-assistant/blob/main/features.csv>
+<https://github.com/Toqsick/linux-assistant/blob/main/features.csv>
 
 ## Current Languages
 
@@ -74,7 +74,7 @@ flatpak run io.github.jean28518.Linux-Assistant
 
 ## Mission
 
-<https://github.com/Jean28518/linux-assistant/blob/main/MANIFEST.md>
+<https://github.com/Toqsick/linux-assistant/blob/main/MANIFEST.md>
 
 ## Development
 

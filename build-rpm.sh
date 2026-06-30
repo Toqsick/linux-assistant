@@ -11,7 +11,7 @@ cp version build/linux/x64/release/bundle/
 mkdir -p rpmbuild/SOURCES/linux-assistant-$VERSION
 cp -r build/linux/x64/release/bundle/* rpmbuild/SOURCES/linux-assistant-$VERSION/
 cp linux-assistant.sh rpmbuild/SOURCES/linux-assistant-$VERSION/
-chmod +x rpmbuild/SOURCES/linux-assistant-$VERSION/linux-assistant
+chmod +x rpmbuild/SOURCES/linux-assistant-$VERSION/linux-assistant.sh
 cp linux-assistant.desktop rpmbuild/SOURCES/linux-assistant-$VERSION/
 cp linux-assistant.svg rpmbuild/SOURCES/linux-assistant-$VERSION/
 cp linux-assistant.png rpmbuild/SOURCES/linux-assistant-$VERSION/

@@ -5,7 +5,7 @@
 <policyconfig>
 
   <vendor>Linux-Assistant Project</vendor>
-  <vendor_url>https//www.linux-assistant.org/</vendor_url>
+  <vendor_url>https://github.com/Toqsick/linux-assistant</vendor_url>
 
   <action id="org.linux-assistant.operations.generic">
     <description>Linux-Assistant needs root access</description>
