@@ -43,6 +43,25 @@ bash ./build-arch-pkg.sh
 sudo pacman -U linux-assistant-*.pkg.tar.zst
 ```
 
+### Flutter/Snap GLIBC Troubleshooting
+
+If `flutter` from snap fails with GLIBC errors (for example `GLIBC_2.38 not found`), use a local Flutter SDK tarball instead of the snap runtime:
+
+```bash
+mkdir -p ~/.local/flutter-sdk
+cd ~/.local/flutter-sdk
+curl -fL https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.44.4-stable.tar.xz -o flutter.tar.xz
+tar -xf flutter.tar.xz
+export PATH="$HOME/.local/flutter-sdk/flutter/bin:$PATH"
+
+flutter --version
+flutter pub get
+flutter test
+flutter analyze
+```
+
+This avoids host/snap runtime mismatches and is the recommended fallback in this project environment.
+
 ## Run as flatpak
 
 Repo: <https://github.com/Toqsick/flathub/tree/com.github.jean28518.Linux-Assistant>

@@ -17,8 +17,7 @@ class RemoveSoftwareWidget extends StatelessWidget {
         future: installedSoftware,
         builder: (context, snapshot) {
           if (snapshot.hasData) {
-            List<dynamic> installedSoftwareList =
-                snapshot.data! as List<dynamic>;
+            final installedSoftwareList = snapshot.data!;
             return Column(
               // padding: 10,
               // ratio: 2,
