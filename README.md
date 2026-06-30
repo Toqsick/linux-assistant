@@ -1,51 +1,48 @@
-# linux-assistant
+# Linux Assistant
 
-A linux application which is a daily linux helper with powerful integrated search, routine checks and administrative tasks. The project is built with Flutter and Python.
+Linux Assistant is a Linux desktop helper focused on integrated search, routine checks, and common admin workflows.  
+The app is built with Flutter (UI) plus Python helper scripts.
+
+Current stable release: **v0.7.0**  
+Release page: <https://github.com/Toqsick/linux-assistant/releases/tag/v0.7.0>
+
+## Documentation
+
+1. Mission and product direction: [MANIFEST.md](MANIFEST.md)
+2. v0.7 technical report and roadmap: [V0.7_REPORT.md](V0.7_REPORT.md)
+3. Feature list: [features.csv](features.csv)
 
 ## Requirements
 
 ```bash
-sudo apt install keybinder-3.0 
-sudo apt install libkeybinder-3.0-0 libkeybinder-3.0-dev # For debian 11, Ubuntu 22.04, ...
-
+sudo apt install keybinder-3.0
+sudo apt install libkeybinder-3.0-0 libkeybinder-3.0-dev
 sudo apt install wmctrl
 ```
 
-## Build
+## Build and run
 
 ```bash
-# Install keybinder, see requirements
-sudo rm /etc/apt/preferences.d/nosnap.pref # (For Linux Mint)
-sudo apt install snapd git
-sudo snap install flutter --classic
-flutter doctor # If command not found: Reboot and try again
 git clone https://github.com/Toqsick/linux-assistant.git
 cd linux-assistant
 
-# Option 1: Build with flutter manually
+# Install Flutter (snap variant)
+sudo apt install snapd git
+sudo snap install flutter --classic
+flutter doctor
+
+# Build and run
+flutter pub get
 flutter build linux
 chmod +x additional/python/run_script.py
 cp -r additional build/linux/x64/release/bundle/
 cd build/linux/x64/release/bundle/
 ./linux_assistant
-
-# Option 2: Build .deb and install .deb package:
-bash ./build-deb.sh
-sudo dpkg --install linux-assistant.deb
-
-# Option 3: Build .rpm package:
-bash ./build-rpm.sh
-
-# Option 3: Build Arch package
-# You can only do this on an arch based distro
-bash ./build-arch-pkg.sh
-# To Install:
-sudo pacman -U linux-assistant-*.pkg.tar.zst
 ```
 
-### Flutter/Snap GLIBC Troubleshooting
+### Flutter/Snap GLIBC troubleshooting
 
-If `flutter` from snap fails with GLIBC errors (for example `GLIBC_2.38 not found`), use a local Flutter SDK tarball instead of the snap runtime:
+If Flutter from snap fails with GLIBC errors (for example `GLIBC_2.38 not found`), use a local Flutter SDK tarball instead:
 
 ```bash
 mkdir -p ~/.local/flutter-sdk
@@ -60,45 +57,37 @@ flutter test
 flutter analyze
 ```
 
-This avoids host/snap runtime mismatches and is the recommended fallback in this project environment.
-
-## Run as flatpak
-
-Repo: <https://github.com/Toqsick/flathub/tree/com.github.jean28518.Linux-Assistant>
-
-- Uncomment the archive from the web and use e.g. this local one:
-
-```yaml
-      - type: archive
-        path: /path/to/linux-assistant-bundle.zip
-```
+## Packaging
 
 ```bash
-flatpak install runtime/org.freedesktop.Sdk/x86_64/23.08
+# Debian package
+bash ./build-deb.sh
+sudo dpkg --install linux-assistant.deb
 
-rm -r .flatpak-builder/ # Only if you built something before.
-flatpak-builder build-dir io.github.jean28518.Linux-Assistant.yml  --user --force-clean --install 
-flatpak run io.github.jean28518.Linux-Assistant
+# RPM package
+bash ./build-rpm.sh
+
+# Arch package (run on Arch-based distro)
+bash ./build-arch-pkg.sh
+sudo pacman -U linux-assistant-*.pkg.tar.zst
 ```
 
-## Features
+## Flatpak notes
 
-<https://github.com/Toqsick/linux-assistant/blob/main/features.csv>
+Flatpak companion repository:  
+<https://github.com/Toqsick/flathub/tree/com.github.jean28518.Linux-Assistant>
 
-## Current Languages
+## Development quality checks
+
+```bash
+flutter pub get
+flutter gen-l10n
+flutter test
+flutter analyze
+```
+
+## Languages
 
 - English
 - German
 - Italian
-
-## Mission
-
-<https://github.com/Toqsick/linux-assistant/blob/main/MANIFEST.md>
-
-## Development
-
-```bash
-# Install flutter
-
-flutter run
-```
