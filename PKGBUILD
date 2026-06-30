@@ -1,11 +1,11 @@
 # Maintainer: Jean28518@Github
 
 pkgname=linux-assistant
-pkgver=0.5.3
+pkgver=0.7.0
 pkgrel=1
 pkgdesc='A daily linux helper with powerful integrated search, routines and checks.'
 arch=('x86_64')
-url='https://www.linux-assistant.org'
+url='https://github.com/Toqsick/linux-assistant'
 license=('GPL-3.0-or-later')
 depends=('libkeybinder3'
         'wmctrl'
@@ -14,7 +14,7 @@ depends=('libkeybinder3'
         'mesa-utils'
         'polkit')
 options=('!debug')
-source=("https://github.com/Jean28518/linux-assistant/releases/latest/download/linux-assistant-bundle.zip")
+source=("https://github.com/Toqsick/linux-assistant/releases/latest/download/linux-assistant-bundle.zip")
 sha256sums=('SKIP')
 
 package() {

@@ -28,7 +28,7 @@ class WeeklyTasks {
   static Future<void> _getNewestVersion() async {
     http.Response response = await http
         .get(Uri.parse(
-            "https://api.github.com/repos/Jean28518/linux-assistant/releases/latest"))
+            "https://api.github.com/repos/Toqsick/linux-assistant/releases/latest"))
         .timeout(const Duration(seconds: _defaultTimeout));
 
     Map responseMap = json.decode(response.body);

@@ -57,10 +57,10 @@
 
   <content_rating type="oars-1.1" />
   <url type="homepage">
-	https://www.linux-assistant.org/
+	https://github.com/Toqsick/linux-assistant
   </url>
   <url type="bugtracker">
-	https://github.com/Jean28518/linux-assistant/issues
+	https://github.com/Toqsick/linux-assistant/issues
   </url>
 
   <screenshots>

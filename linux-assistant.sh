@@ -21,7 +21,7 @@ if [[ "$1" == "-v" || "$1" == "--version" ]]; then
 
   echo "Linux-Assistant $VERSION"
   echo "A daily linux helper with powerful integrated search, routines and checks."
-  echo "Homepage: https://www.linux-assistant.org"
+  echo "Homepage: https://github.com/Toqsick/linux-assistant"
   exit 0
 fi
 
