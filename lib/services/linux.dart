@@ -789,7 +789,7 @@ class Linux {
     }
   }
 
-  static void getAllFolderEntriesOfUser(BuildContext context) async {
+  static Future<void> getAllFolderEntriesOfUser(BuildContext context) async {
     // String foldersString = await runCommandWithCustomArguments("python3", [
     //   "${executableFolder}additional/python/get_folder_structure.py",
     //   "--recursion_depth=${ConfigHandler().getValueUnsafe("folder_recursion_depth", 3)}"
@@ -866,7 +866,7 @@ class Linux {
   }
 
   // Get all available applications, which are installed and .destop files are present.
-  static void getAllAvailableApplications() async {
+  static Future<void> getAllAvailableApplications() async {
     String applicationsString = await runCommandWithCustomArguments("python3", [
       "$pythonScriptsFolder/get_applications.py",
       "--lang=${currentenvironment.language}",
@@ -901,7 +901,7 @@ class Linux {
     await ActionEntryListService.addEntries(actionEntries);
   }
 
-  static void getRecentFiles(BuildContext context) async {
+  static Future<void> getRecentFiles(BuildContext context) async {
     String recentFileString = await runPythonScript("get_recent_files.py");
     List<String> recentFiles = recentFileString.split("\n");
     List<ActionEntry> actionEntries = [];
@@ -1361,7 +1361,7 @@ class Linux {
     return await File("/etc/os-release").readAsString();
   }
 
-  static void getFavoriteFiles(BuildContext context) async {
+  static Future<void> getFavoriteFiles(BuildContext context) async {
     String output = await runPythonScript("get_favorite_files.py");
     output = output.trim();
     List<String> list = output.split("\n");
@@ -1854,7 +1854,7 @@ class Linux {
   }
 
   /// For all package managers including flatpak and snap
-  static void getUninstallEntries(context) async {
+  static Future<void> getUninstallEntries(context) async {
     List<ActionEntry> returnValue = [];
     Future<List<String>> installedAptPackagesFuture = getInstalledAPTPackages();
     Future<List<List<String>>> installedZypperPackagesFuture =
@@ -2072,7 +2072,7 @@ class Linux {
     return newEntries;
   }
 
-  static void getBrowserBookmarks(BuildContext context) async {
+  static Future<void> getBrowserBookmarks(BuildContext context) async {
     String outputString = await runPythonScript("get_bookmarks.py");
     List<String> lines = outputString.split("\n");
     List<ActionEntry> returnValue = [];
