@@ -4,12 +4,10 @@ import 'package:linux_assistant/content/recommendations.dart';
 import 'package:linux_assistant/layouts/main_screen/main_search.dart';
 import 'package:linux_assistant/layouts/mint_y.dart';
 import 'package:linux_assistant/models/action_entry.dart';
-import 'package:linux_assistant/models/action_entry_list.dart';
 import 'package:linux_assistant/services/action_entry_list_service.dart';
 import 'package:linux_assistant/services/config_handler.dart';
 import 'package:linux_assistant/services/linux.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:logger/logger.dart';
+import 'package:linux_assistant/l10n/app_localizations.dart';
 
 class MainSearchLoader extends StatefulWidget {
   const MainSearchLoader({Key? key}) : super(key: key);
@@ -23,7 +21,6 @@ class _MainSearchLoaderState extends State<MainSearchLoader> {
 
   Future<void> prepare() async {
     MainSearch.unregisterHotkeysForKeyboardUse();
-    const Duration timeoutDuration = Duration(seconds: 5);
 
     ConfigHandler configHandler = ConfigHandler();
     await configHandler.ensureConfigIsLoaded();
@@ -159,12 +156,6 @@ class _MainSearchLoaderState extends State<MainSearchLoader> {
     // returnValue = EntryCache.loadEntries();
 
     // return returnValue;
-  }
-
-  List<ActionEntry> _onTimeoutOfSearchLoadingModule(String module) {
-    Logger().w(
-        "Timeout of loading $module! Please report this to the developers on https://www.linux-assistant.org.");
-    return [];
   }
 
   @override

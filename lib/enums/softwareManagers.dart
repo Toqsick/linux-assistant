@@ -21,8 +21,6 @@ String getNiceStringOfSoftwareManagerEnum(SOFTWARE_MANAGERS input) {
       return "DNF";
     case SOFTWARE_MANAGERS.PACMAN:
       return "Pacman";
-    default:
-      return "";
   }
 }
 
