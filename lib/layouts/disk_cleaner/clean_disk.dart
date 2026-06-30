@@ -104,11 +104,11 @@ class CleanDiskPage extends StatelessWidget {
   }
 
   Widget _getDiskUsageWidget(BuildContext context) {
-    return FutureBuilder(
+    return FutureBuilder<List<DeviceInfo>>(
       future: LinuxFilesystem.disks(),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
-          List<DeviceInfo> disks = snapshot.data! as List<DeviceInfo>;
+          final disks = snapshot.data!;
           DeviceInfo? found;
           for (DeviceInfo disk in disks) {
             if (disk.mountPoint == mountpoint) {

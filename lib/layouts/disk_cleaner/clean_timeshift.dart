@@ -15,11 +15,11 @@ class TimeshiftCleanWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Future<List<String>> timeshiftSnapshotsFuture = _getTimeshiftSnapshots();
-    return FutureBuilder(
+    return FutureBuilder<List<String>>(
         future: timeshiftSnapshotsFuture,
         builder: (context, snapshot) {
           if (snapshot.hasData) {
-            List<String> timeshiftSnapshots = snapshot.data! as List<String>;
+            final timeshiftSnapshots = snapshot.data!;
             if (timeshiftSnapshots.isEmpty) {
               return Text("No timeshift snapshots found");
             }

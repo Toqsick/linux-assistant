@@ -11,12 +11,11 @@ class BiggestFoldersWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     Future<List<List<String>>> biggestFolders =
         Linux.getBiggestFoldersOfPath(path);
-    return FutureBuilder(
+    return FutureBuilder<List<List<String>>>(
       future: biggestFolders,
       builder: (context, snapshot) {
         if (snapshot.hasData) {
-          List<List<String>> fiveBiggestFolders =
-              snapshot.data! as List<List<String>>;
+          final fiveBiggestFolders = snapshot.data!;
           return Column(
             children: [
               Row(mainAxisAlignment: MainAxisAlignment.center, children: [

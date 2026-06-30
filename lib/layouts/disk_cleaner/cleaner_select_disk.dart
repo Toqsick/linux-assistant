@@ -17,12 +17,12 @@ class CleanerSelectDiskPage extends StatelessWidget {
 
     return MintYPage(
       title: "Speicherplatz freigeben",
-      customContentElement: FutureBuilder(
+      customContentElement: FutureBuilder<List<DeviceInfo>>(
           future: disks,
           builder: ((context, snapshot) {
             List<Widget> cards = [];
             if (snapshot.hasData) {
-              for (var disk in snapshot.data! as List<DeviceInfo>) {
+              for (final disk in snapshot.data!) {
                 cards.add(MintYCardWithIconAndAction(
                   icon: SystemIcon(iconString: "disks"),
                   title: disk.mountPoint == "/"
