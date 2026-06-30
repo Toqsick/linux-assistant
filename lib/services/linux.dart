@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -19,7 +18,7 @@ import 'package:linux_assistant/services/action_entry_list_service.dart';
 import 'package:linux_assistant/services/config_handler.dart';
 import 'package:linux_assistant/services/hashing.dart';
 import 'package:linux_assistant/services/main_search_loader.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:linux_assistant/l10n/app_localizations.dart';
 
 class Linux {
   static Environment currentenvironment = Environment();
@@ -883,8 +882,6 @@ class Linux {
         continue;
       }
 
-      String appId = values[0].split("/").last.replaceAll(".desktop", "");
-
       ActionEntry entry = ActionEntry(
           name: values[1],
           description: values[2],
@@ -1043,8 +1040,6 @@ class Linux {
         return "/usr/bin/dnf";
       case SOFTWARE_MANAGERS.PACMAN:
         return "/usr/bin/pacman";
-      default:
-        return "";
     }
   }
 
@@ -1179,7 +1174,6 @@ class Linux {
               "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN)} -S --needed --noconfirm vlc gstreamer libdvdcss libdvdread libdvdnav ffmpeg gst-plugins-base gst-plugins-good gst-plugins-bad gst-plugins-ugly",
         ));
         break;
-      default:
     }
   }
 
@@ -2124,8 +2118,6 @@ class Linux {
         } else {
           return false;
         }
-      default:
-        return false;
     }
   }
 
@@ -2609,7 +2601,7 @@ class Linux {
     print("Opening command in terminal: $command");
     switch (currentenvironment.desktop) {
       case DESKTOPS.KDE:
-        runCommandWithCustomArguments("konsole", ["-e" "bash", "-c", command]);
+        runCommandWithCustomArguments("konsole", ["-e", "bash", "-c", command]);
         break;
       case DESKTOPS.GNOME:
       case DESKTOPS.CINNAMON:
@@ -2624,11 +2616,6 @@ class Linux {
         runCommandWithCustomArguments(
             "xfce4-terminal", ["-e", "bash $cacheDir/temp_command.sh"]);
         break;
-      default:
-        // Xterm
-        if (File("/usr/bin/xterm").existsSync()) {
-          runCommandWithCustomArguments("xterm", ["-e", "bash", "-c", command]);
-        }
     }
   }
 

@@ -11,7 +11,7 @@ import 'package:linux_assistant/services/config_handler.dart';
 import 'package:linux_assistant/services/linux.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:linux_assistant/l10n/app_localizations.dart';
 
 String CURRENT_LINUX_ASSISTANT_VERSION = "";
 
@@ -146,8 +146,6 @@ class MyApp extends StatelessWidget {
         MintY.currentColor = const Color.fromARGB(255, 127, 63, 191);
         MintY.secondaryColor = const Color.fromARGB(255, 127, 127, 255);
         break;
-      default:
-        MintY.currentColor = Colors.blue;
     }
     ConfigHandler configHandler = ConfigHandler();
     String colorString = configHandler.getValueUnsafe("main_color", "");

@@ -5,29 +5,29 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:linux_assistant/layouts/greeter/start_screen.dart';
-
 import 'package:linux_assistant/main.dart';
 
+import 'package:flutter/material.dart';
+
+class _DummyPage extends StatelessWidget {
+  const _DummyPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: Text('Smoke Test')),
+    );
+  }
+}
+
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
+  testWidgets('App shell smoke test', (WidgetTester tester) async {
     await tester.pumpWidget(MyApp(
-      firstPage: const StartScreen(),
+      firstPage: const _DummyPage(),
     ));
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.byType(MyApp), findsOneWidget);
+    expect(find.text('Smoke Test'), findsOneWidget);
   });
 }
