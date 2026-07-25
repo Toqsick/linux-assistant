@@ -125,7 +125,7 @@ class _HubShellState extends State<HubShell> {
           onOpenSecurity: () => _select(HubSection.security),
         );
       case HubSection.search:
-        return MainSearch();
+        return MainSearch(embedded: true);
       case HubSection.storage:
         return const StorageSection();
       case HubSection.health:

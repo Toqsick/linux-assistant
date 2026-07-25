@@ -29,12 +29,19 @@ import 'package:linux_assistant/l10n/app_localizations.dart';
 class MainSearch extends StatefulWidget {
   late bool colorfulBackground;
 
-  MainSearch({Key? key}) {
+  /// True when the search is a section of the hub rather than the whole window.
+  final bool embedded;
+
+  MainSearch({super.key, this.embedded = false}) {
     ConfigHandler configHandler = ConfigHandler();
-    colorfulBackground = configHandler.getValueUnsafe(
-      "colorfulBackground",
-      true,
-    );
+    // The gradient is a full-window launcher backdrop. Inside the hub it
+    // covers the content area only and fights with the surrounding chrome, so
+    // the section stays on the theme's own surface.
+    colorfulBackground = !embedded &&
+        configHandler.getValueUnsafe(
+          "colorfulBackground",
+          true,
+        );
   }
 
   /// Set by the hub while it is on screen.
