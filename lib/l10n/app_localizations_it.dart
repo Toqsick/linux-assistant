@@ -971,4 +971,174 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get showPackageManagerActions => 'Mostra azioni del gestore pacchetti';
+
+  @override
+  String get dashboard => 'Dashboard';
+
+  @override
+  String get hubStorage => 'Archiviazione';
+
+  @override
+  String get hubSoftware => 'Software e aggiornamenti';
+
+  @override
+  String get hubSystem => 'Sistema';
+
+  @override
+  String get hubSearch => 'Ricerca';
+
+  @override
+  String get quickActions => 'Azioni rapide';
+
+  @override
+  String get hubSearchPlaceholder =>
+      'Cerca app, file, impostazioni e azioni...';
+
+  @override
+  String get copyCommand => 'Copia comando';
+
+  @override
+  String get copied => 'Copiato';
+
+  @override
+  String get readOnly => 'Sola lettura';
+
+  @override
+  String get readOnlyNotice =>
+      'Questa vista legge solo il sistema. Non modifica nulla.';
+
+  @override
+  String get whyItMatters => 'Perché è importante';
+
+  @override
+  String get checkItYourself => 'Verifica o modifica tu stesso';
+
+  @override
+  String get severityCritical => 'Critico';
+
+  @override
+  String get severityHigh => 'Alto';
+
+  @override
+  String get severityMedium => 'Medio';
+
+  @override
+  String get severityInfo => 'Info';
+
+  @override
+  String get uptimeLabel => 'Tempo di attività';
+
+  @override
+  String get processesLabel => 'Processi';
+
+  @override
+  String get zombiesLabel => 'Zombie';
+
+  @override
+  String get swapLabel => 'Swap';
+
+  @override
+  String get themeSystem => 'Segui il sistema';
+
+  @override
+  String get themeLight => 'Chiaro';
+
+  @override
+  String get themeDark => 'Scuro';
+
+  @override
+  String get switchTheme => 'Cambia tema';
+
+  @override
+  String get useDistroColors => 'Usa i colori della distribuzione';
+
+  @override
+  String get useDistroColorsDescription =>
+      'Sostituisce il colore principale con uno adatto alla tua distribuzione.';
+
+  @override
+  String get collectingData => 'Raccolta dei dati di sistema...';
+
+  @override
+  String get statsUnavailable =>
+      'Impossibile leggere i dati di sistema. Vengono mostrati gli ultimi valori noti.';
+
+  @override
+  String get kernelLabel => 'Kernel';
+
+  @override
+  String get desktopLabel => 'Desktop';
+
+  @override
+  String get hostLabel => 'Host';
+
+  @override
+  String get collapseSidebar => 'Comprimi barra laterale';
+
+  @override
+  String get expandSidebar => 'Espandi barra laterale';
+
+  @override
+  String get noQuickActions => 'Nessuna azione rapida disponibile.';
+
+  @override
+  String get topProcesses => 'Processi principali';
+
+  @override
+  String get mountedDisks => 'Dischi montati';
+
+  @override
+  String get securityReadOnlyIntro =>
+      'Linux Assistant controlla queste impostazioni senza modificarle. Ogni risultato include il comando per verificarlo o modificarlo autonomamente.';
+
+  @override
+  String get uptimeUnitShortMinutes => 'min';
+
+  @override
+  String get uptimeUnitShortHours => 'h';
+
+  @override
+  String get uptimeUnitShortDays => 'g';
+
+  @override
+  String ofTotal(String total) {
+    return 'di $total';
+  }
+
+  @override
+  String updatesAvailableCount(int count) {
+    return '$count aggiornamenti disponibili';
+  }
+
+  @override
+  String get whyFirewall =>
+      'Un firewall blocca le connessioni in entrata che non intendevi accettare.';
+
+  @override
+  String get whySsh =>
+      'Un server SSH accetta accessi dalla rete. Se è attivo involontariamente, amplia la superficie di attacco.';
+
+  @override
+  String get whyFail2ban =>
+      'Senza fail2ban, i tentativi di accesso SSH falliti non vengono limitati né bloccati.';
+
+  @override
+  String get whyXrdp =>
+      'Un server desktop remoto espone l\'intera sessione sulla rete.';
+
+  @override
+  String get whyHomeFolder =>
+      'Una cartella home leggibile da tutti consente a qualsiasi account locale di leggere i tuoi file personali.';
+
+  @override
+  String get whyUpdates =>
+      'Gli aggiornamenti in sospeso contengono spesso correzioni di sicurezza.';
+
+  @override
+  String get whySources =>
+      'I repository di terze parti possono fornire pacchetti che sostituiscono quelli di sistema.';
+
+  @override
+  String get whyYay =>
+      'Gli helper AUR installano pacchetti della community che nessuno ha verificato per te.';
 }

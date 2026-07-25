@@ -1757,6 +1757,312 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show package manager actions'**
   String get showPackageManagerActions;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Dashboard'**
+  String get dashboard;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Storage'**
+  String get hubStorage;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Software & updates'**
+  String get hubSoftware;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get hubSystem;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get hubSearch;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Quick actions'**
+  String get quickActions;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Search apps, files, settings and actions...'**
+  String get hubSearchPlaceholder;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Copy command'**
+  String get copyCommand;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get copied;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only'**
+  String get readOnly;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'This view only reads your system. It never changes anything.'**
+  String get readOnlyNotice;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Why this matters'**
+  String get whyItMatters;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Check or change it yourself'**
+  String get checkItYourself;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Critical'**
+  String get severityCritical;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get severityHigh;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get severityMedium;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Info'**
+  String get severityInfo;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Uptime'**
+  String get uptimeLabel;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Processes'**
+  String get processesLabel;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Zombies'**
+  String get zombiesLabel;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Swap'**
+  String get swapLabel;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Follow system'**
+  String get themeSystem;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get themeLight;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get themeDark;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Switch theme'**
+  String get switchTheme;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Use distribution colors'**
+  String get useDistroColors;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Replaces the default accent with a color matching your distribution.'**
+  String get useDistroColorsDescription;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Collecting system data...'**
+  String get collectingData;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'System data could not be read. Showing the last known values.'**
+  String get statsUnavailable;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Kernel'**
+  String get kernelLabel;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Desktop'**
+  String get desktopLabel;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Host'**
+  String get hostLabel;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse sidebar'**
+  String get collapseSidebar;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Expand sidebar'**
+  String get expandSidebar;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'No quick actions available yet.'**
+  String get noQuickActions;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Top processes'**
+  String get topProcesses;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Mounted disks'**
+  String get mountedDisks;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Linux Assistant inspects these settings without changing them. Every finding comes with the command to check or change it yourself.'**
+  String get securityReadOnlyIntro;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'min'**
+  String get uptimeUnitShortMinutes;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'h'**
+  String get uptimeUnitShortHours;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'d'**
+  String get uptimeUnitShortDays;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'of {total}'**
+  String ofTotal(String total);
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'{count} updates available'**
+  String updatesAvailableCount(int count);
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'A firewall blocks incoming connections you never intended to accept.'**
+  String get whyFirewall;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'An SSH server accepts logins over the network. If it runs unintentionally, it widens your attack surface.'**
+  String get whySsh;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Without fail2ban, repeated failed SSH logins are never throttled or blocked.'**
+  String get whyFail2ban;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'A remote desktop server exposes your entire session over the network.'**
+  String get whyXrdp;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'A world-readable home directory lets any local account read your personal files.'**
+  String get whyHomeFolder;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Pending updates frequently contain security fixes.'**
+  String get whyUpdates;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'Third-party repositories can ship packages that replace system ones.'**
+  String get whySources;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'AUR helpers install community packages that nobody reviewed for you.'**
+  String get whyYay;
 }
 
 class _AppLocalizationsDelegate

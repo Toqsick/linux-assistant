@@ -128,7 +128,7 @@
   "openLinuxAssistantFasterDescription": "Puoi aprire Linux Assistant con i tasti {modifier} + <Qn Questo è altamente raccomandato per massimizzare la tua produttività sotto Linux.",
   "@openLinuxAssistantFasterDescription": {
     "placeholders": {
-      "modifier" : {
+      "modifier": {
         "type": "Object"
       }
     },
@@ -153,7 +153,7 @@
   "youCanOpenLinuxAssistantWithHotkey": "Puoi sempre aprire Linux Assistant con la combinazione di tasti {modifier} + <Q>. Se ancora non funziona, chiama 'scorciatoia da tastiera' nella ricerca.",
   "@youCanOpenLinuxAssistantWithHotkey": {
     "placeholders": {
-      "modifier" : {
+      "modifier": {
         "type": "Object"
       }
     },
@@ -169,10 +169,10 @@
   "uptimeWarning": "Il tuo sistema Linux non è stato riavviato da molto tempo. Per evitare potenziali errori, si consigliano riavvii regolari. L'ultimo riavvio è avvenuto {time} {unit} fa.",
   "@uptimeWarning": {
     "placeholders": {
-      "time" : {
+      "time": {
         "type": "Object"
       },
-      "unit" : {
+      "unit": {
         "type": "Object"
       }
     },
@@ -182,10 +182,10 @@
   "uptimePass": "Il tuo sistema Linux è in esecuzione solo da {time} {unit}. Questo è buono!",
   "@uptimePass": {
     "placeholders": {
-      "time" : {
+      "time": {
         "type": "Object"
       },
-      "unit" : {
+      "unit": {
         "type": "Object"
       }
     },
@@ -198,10 +198,10 @@
   "processesWithZombiesMessage": "Attualmente sono in esecuzione {processes} processi. Di questi {zombies} sono stati trovati zombi.",
   "@processesWithZombiesMessage": {
     "placeholders": {
-      "processes" : {
+      "processes": {
         "type": "Object"
       },
-      "zombies" : {
+      "zombies": {
         "type": "Object"
       }
     },
@@ -211,7 +211,7 @@
   "removableDevicesWarning": "{removableDevices} sono stati trovati dispositivi/(partizioni) di archiviazione rimovibili. Se al momento non ne hai bisogno, ti consigliamo di rimuoverli per motivi di sicurezza e di salute di questi dispositivi.",
   "@removableDevicesWarning": {
     "placeholders": {
-      "removableDevices" : {
+      "removableDevices": {
         "type": "Object"
       }
     },
@@ -232,7 +232,7 @@
   "applyUpdatesSinceReleaseDescription": "Dal rilascio dell'attuale versione di {distro}, potrebbero essere disponibili aggiornamenti. Applica questi aggiornamenti.",
   "@applyUpdatesSinceReleaseDescription": {
     "placeholders": {
-      "distro" : {
+      "distro": {
         "type": "Object"
       }
     },
@@ -246,7 +246,7 @@
   "setUpLinuxAssistantKeyboardShortcut": "Imposta la combinazione di tastiera {modifier} + <Q> per aprire rapidamente Linux Assistant da qualsiasi luogo.",
   "@setUpLinuxAssistantKeyboardShortcut": {
     "placeholders": {
-      "modifier" : {
+      "modifier": {
         "type": "Object"
       }
     },
@@ -264,7 +264,7 @@
   "installX": "Installa {app}",
   "@installX": {
     "placeholders": {
-      "app" : {
+      "app": {
         "type": "Object"
       }
     },
@@ -274,7 +274,7 @@
   "installingXDescription": "Installazione di {app}...\nDevi aprire {app} successivamente e separatamente.",
   "@installingXDescription": {
     "placeholders": {
-      "app" : {
+      "app": {
         "type": "Object"
       }
     },
@@ -303,7 +303,7 @@
   "secondaryColorSetting": "Colore secondario (riavvio richiesto)",
   "colorfulBackground": "Sfondo colorato",
   "theFollowingCommandsWillBeExecuted": "Verranno eseguiti i seguenti comandi",
-  "command" : "Comando",
+  "command": "Comando",
   "showCommands": "Mostra comandi",
   "hideCommands": "Nascondi comandi",
   "description": "Descrizione",
@@ -311,7 +311,7 @@
   "no": "No",
   "selfLearningSearch": "Ricerca in autoapprendimento",
   "updateSystemDescription": "Aggiorna la tua macchina Linux e tutte le applicazioni (aggiornamenti).\nQuesto processo potrebbe richiedere alcuni minuti.",
-  "featureOverview" : "Panoramica delle funzionalità",
+  "featureOverview": "Panoramica delle funzionalità",
   "powerMode": "Modalità di alimentazione",
   "powerModeDescription": "Passa dalla modalità di risparmio energetico a quella di prestazione.",
   "powerSaver": "modalità di risparmio energetico",
@@ -320,7 +320,7 @@
   "activate": "Attivare",
   "active": "Attiva",
   "installPowerProfilesDeamonDescription": "Per modificare la modalità di risparmio energetico è necessario power-profiles-deamon. Vuoi installarlo?",
-  "folderRecursionDepth" : "Profondità di ricorsione della cartella",
+  "folderRecursionDepth": "Profondità di ricorsione della cartella",
   "shutdownAfterwards": "Successivamente spegni Linux",
   "versionOfLinuxAssistant": "Versione di Linux Assistant",
   "urls": "URL",
@@ -330,7 +330,7 @@
   "uninstallingXDescription": "Disinstallazione di {app}...",
   "@uninstallingXDescription": {
     "placeholders": {
-      "app" : {
+      "app": {
         "type": "Object"
       }
     },
@@ -340,7 +340,7 @@
   "uninstallApp": "Uninstall {app}",
   "@uninstallApp": {
     "placeholders": {
-      "app" : {
+      "app": {
         "type": "Object"
       }
     },
@@ -350,10 +350,10 @@
   "uninstallAppWarning": "Vuoi davvero disinstallare {app}?\nIl sistema potrebbe non funzionare correttamente in seguito.\nDisinstalla solo i programmi che hai installato tu stesso.",
   "@uninstallAppWarning": {
     "placeholders": {
-      "app" : {
+      "app": {
         "type": "Object"
       }
-    }, 
+    },
     "description": "",
     "type": "text"
   },
@@ -368,7 +368,7 @@
   "cleanX": "Pulisci {app}",
   "@cleanX": {
     "placeholders": {
-      "app" : {
+      "app": {
         "type": "Object"
       }
     },
@@ -903,6 +903,320 @@
     "type": "text"
   },
   "@sendingFeedback": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "dashboard": "Dashboard",
+  "@dashboard": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "hubStorage": "Archiviazione",
+  "@hubStorage": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "hubSoftware": "Software e aggiornamenti",
+  "@hubSoftware": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "hubSystem": "Sistema",
+  "@hubSystem": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "hubSearch": "Ricerca",
+  "@hubSearch": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "quickActions": "Azioni rapide",
+  "@quickActions": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "hubSearchPlaceholder": "Cerca app, file, impostazioni e azioni...",
+  "@hubSearchPlaceholder": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "copyCommand": "Copia comando",
+  "@copyCommand": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "copied": "Copiato",
+  "@copied": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "readOnly": "Sola lettura",
+  "@readOnly": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "readOnlyNotice": "Questa vista legge solo il sistema. Non modifica nulla.",
+  "@readOnlyNotice": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "whyItMatters": "Perché è importante",
+  "@whyItMatters": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "checkItYourself": "Verifica o modifica tu stesso",
+  "@checkItYourself": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "severityCritical": "Critico",
+  "@severityCritical": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "severityHigh": "Alto",
+  "@severityHigh": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "severityMedium": "Medio",
+  "@severityMedium": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "severityInfo": "Info",
+  "@severityInfo": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "uptimeLabel": "Tempo di attività",
+  "@uptimeLabel": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "processesLabel": "Processi",
+  "@processesLabel": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "zombiesLabel": "Zombie",
+  "@zombiesLabel": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "swapLabel": "Swap",
+  "@swapLabel": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "themeSystem": "Segui il sistema",
+  "@themeSystem": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "themeLight": "Chiaro",
+  "@themeLight": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "themeDark": "Scuro",
+  "@themeDark": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "switchTheme": "Cambia tema",
+  "@switchTheme": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "useDistroColors": "Usa i colori della distribuzione",
+  "@useDistroColors": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "useDistroColorsDescription": "Sostituisce il colore principale con uno adatto alla tua distribuzione.",
+  "@useDistroColorsDescription": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "collectingData": "Raccolta dei dati di sistema...",
+  "@collectingData": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "statsUnavailable": "Impossibile leggere i dati di sistema. Vengono mostrati gli ultimi valori noti.",
+  "@statsUnavailable": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "kernelLabel": "Kernel",
+  "@kernelLabel": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "desktopLabel": "Desktop",
+  "@desktopLabel": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "hostLabel": "Host",
+  "@hostLabel": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "collapseSidebar": "Comprimi barra laterale",
+  "@collapseSidebar": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "expandSidebar": "Espandi barra laterale",
+  "@expandSidebar": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "noQuickActions": "Nessuna azione rapida disponibile.",
+  "@noQuickActions": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "topProcesses": "Processi principali",
+  "@topProcesses": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "mountedDisks": "Dischi montati",
+  "@mountedDisks": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "securityReadOnlyIntro": "Linux Assistant controlla queste impostazioni senza modificarle. Ogni risultato include il comando per verificarlo o modificarlo autonomamente.",
+  "@securityReadOnlyIntro": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "uptimeUnitShortMinutes": "min",
+  "@uptimeUnitShortMinutes": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "uptimeUnitShortHours": "h",
+  "@uptimeUnitShortHours": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "uptimeUnitShortDays": "g",
+  "@uptimeUnitShortDays": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "ofTotal": "di {total}",
+  "@ofTotal": {
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    },
+    "description": "",
+    "type": "text"
+  },
+  "updatesAvailableCount": "{count} aggiornamenti disponibili",
+  "@updatesAvailableCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    },
+    "description": "",
+    "type": "text"
+  },
+  "whyFirewall": "Un firewall blocca le connessioni in entrata che non intendevi accettare.",
+  "@whyFirewall": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "whySsh": "Un server SSH accetta accessi dalla rete. Se è attivo involontariamente, amplia la superficie di attacco.",
+  "@whySsh": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "whyFail2ban": "Senza fail2ban, i tentativi di accesso SSH falliti non vengono limitati né bloccati.",
+  "@whyFail2ban": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "whyXrdp": "Un server desktop remoto espone l'intera sessione sulla rete.",
+  "@whyXrdp": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "whyHomeFolder": "Una cartella home leggibile da tutti consente a qualsiasi account locale di leggere i tuoi file personali.",
+  "@whyHomeFolder": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "whyUpdates": "Gli aggiornamenti in sospeso contengono spesso correzioni di sicurezza.",
+  "@whyUpdates": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "whySources": "I repository di terze parti possono fornire pacchetti che sostituiscono quelli di sistema.",
+  "@whySources": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "whyYay": "Gli helper AUR installano pacchetti della community che nessuno ha verificato per te.",
+  "@whyYay": {
     "placeholders": {},
     "description": "",
     "type": "text"

@@ -955,4 +955,173 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get showPackageManagerActions => 'Show package manager actions';
+
+  @override
+  String get dashboard => 'Dashboard';
+
+  @override
+  String get hubStorage => 'Storage';
+
+  @override
+  String get hubSoftware => 'Software & updates';
+
+  @override
+  String get hubSystem => 'System';
+
+  @override
+  String get hubSearch => 'Search';
+
+  @override
+  String get quickActions => 'Quick actions';
+
+  @override
+  String get hubSearchPlaceholder =>
+      'Search apps, files, settings and actions...';
+
+  @override
+  String get copyCommand => 'Copy command';
+
+  @override
+  String get copied => 'Copied';
+
+  @override
+  String get readOnly => 'Read-only';
+
+  @override
+  String get readOnlyNotice =>
+      'This view only reads your system. It never changes anything.';
+
+  @override
+  String get whyItMatters => 'Why this matters';
+
+  @override
+  String get checkItYourself => 'Check or change it yourself';
+
+  @override
+  String get severityCritical => 'Critical';
+
+  @override
+  String get severityHigh => 'High';
+
+  @override
+  String get severityMedium => 'Medium';
+
+  @override
+  String get severityInfo => 'Info';
+
+  @override
+  String get uptimeLabel => 'Uptime';
+
+  @override
+  String get processesLabel => 'Processes';
+
+  @override
+  String get zombiesLabel => 'Zombies';
+
+  @override
+  String get swapLabel => 'Swap';
+
+  @override
+  String get themeSystem => 'Follow system';
+
+  @override
+  String get themeLight => 'Light';
+
+  @override
+  String get themeDark => 'Dark';
+
+  @override
+  String get switchTheme => 'Switch theme';
+
+  @override
+  String get useDistroColors => 'Use distribution colors';
+
+  @override
+  String get useDistroColorsDescription =>
+      'Replaces the default accent with a color matching your distribution.';
+
+  @override
+  String get collectingData => 'Collecting system data...';
+
+  @override
+  String get statsUnavailable =>
+      'System data could not be read. Showing the last known values.';
+
+  @override
+  String get kernelLabel => 'Kernel';
+
+  @override
+  String get desktopLabel => 'Desktop';
+
+  @override
+  String get hostLabel => 'Host';
+
+  @override
+  String get collapseSidebar => 'Collapse sidebar';
+
+  @override
+  String get expandSidebar => 'Expand sidebar';
+
+  @override
+  String get noQuickActions => 'No quick actions available yet.';
+
+  @override
+  String get topProcesses => 'Top processes';
+
+  @override
+  String get mountedDisks => 'Mounted disks';
+
+  @override
+  String get securityReadOnlyIntro =>
+      'Linux Assistant inspects these settings without changing them. Every finding comes with the command to check or change it yourself.';
+
+  @override
+  String get uptimeUnitShortMinutes => 'min';
+
+  @override
+  String get uptimeUnitShortHours => 'h';
+
+  @override
+  String get uptimeUnitShortDays => 'd';
+
+  @override
+  String ofTotal(String total) {
+    return 'of $total';
+  }
+
+  @override
+  String updatesAvailableCount(int count) {
+    return '$count updates available';
+  }
+
+  @override
+  String get whyFirewall =>
+      'A firewall blocks incoming connections you never intended to accept.';
+
+  @override
+  String get whySsh =>
+      'An SSH server accepts logins over the network. If it runs unintentionally, it widens your attack surface.';
+
+  @override
+  String get whyFail2ban =>
+      'Without fail2ban, repeated failed SSH logins are never throttled or blocked.';
+
+  @override
+  String get whyXrdp =>
+      'A remote desktop server exposes your entire session over the network.';
+
+  @override
+  String get whyHomeFolder =>
+      'A world-readable home directory lets any local account read your personal files.';
+
+  @override
+  String get whyUpdates => 'Pending updates frequently contain security fixes.';
+
+  @override
+  String get whySources =>
+      'Third-party repositories can ship packages that replace system ones.';
+
+  @override
+  String get whyYay =>
+      'AUR helpers install community packages that nobody reviewed for you.';
 }

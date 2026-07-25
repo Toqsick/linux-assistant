@@ -36,3 +36,7 @@ setupSnapAndInstallSnapStore,?,yes,yes,yes,yes,yes,yes,yes,yes,no,yes,yes,?,?,-,
 Commands in Searchbar,?,-,-,-,-,-,-,-,-,-,-,-,yes,yes,yes,yes,yes,yes,
 AutomaticRepairOfPackageManager,?,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,no,no,no,-,-,-,-,
 openSoftwareCenter,?,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,
+Hub dashboard,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,
+Live system tiles (CPU/RAM/disk),yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,
+Theme switching without restart,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,yes,
+Read-only security findings,?,yes,yes,yes,yes,yes,yes,yes,yes,yes *,yes *,yes,yes,yes,-,-,-,-,"*) checker script does not report an update count on these distributions"
