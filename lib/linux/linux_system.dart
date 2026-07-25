@@ -28,7 +28,13 @@ abstract class LinuxSystem {
       throw Exception(cmdResult.output);
     }
 
-    var values = cmdResult.output.replaceAll(RegExp(r" +"), " ").split(" ");
+    return parseUptime(cmdResult.output);
+  }
+
+  /// Pure parser for `uptime` output, split out so it can be tested without
+  /// shelling out.
+  static Uptime parseUptime(String output) {
+    var values = output.replaceAll(RegExp(r" +"), " ").trim().split(" ");
     if (values[2].contains(":")) {
       var arr = values[2].split(":");
       int hourValue = int.parse(arr[0]);
@@ -36,25 +42,35 @@ abstract class LinuxSystem {
       return hourValue == 0 ? Uptime("m", minuteValue) : Uptime("h", hourValue);
     } else {
       // The new uptime output could be: 1 day,  1:23
-      if (cmdResult.output.contains("min")) {
+      if (output.contains("min")) {
         return Uptime("m", int.parse(values[2]));
       }
-      if (cmdResult.output.contains("day")) {
+      if (output.contains("day")) {
         return Uptime("d", int.parse(values[2]));
       }
-      if (cmdResult.output.contains("hour")) {
+      if (output.contains("hour")) {
         return Uptime("h", int.parse(values[2]));
       }
       return Uptime("m", int.parse(values[2]));
     }
   }
 
+  /// Cached: the CPU thread count cannot change while the app is running, and
+  /// the polling dashboard would otherwise fork `nproc` on every tick.
+  static int? _cachedThreadCount;
+
   static Future<int> getCpuThreadCount() async {
+    final cached = _cachedThreadCount;
+    if (cached != null) {
+      return cached;
+    }
     var cmdResult = await CommandHelper.run("/usr/bin/nproc");
     if (!cmdResult.success) {
       print("Error: ${cmdResult.error}");
     }
-    return int.parse(cmdResult.output);
+    final count = int.parse(cmdResult.output);
+    _cachedThreadCount = count;
+    return count;
   }
 
   /// Returns the average load of the CPU of the last minute

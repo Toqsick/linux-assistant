@@ -962,4 +962,174 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get showPackageManagerActions => 'Paketmanager-Aktionen anzeigen';
+
+  @override
+  String get dashboard => 'Dashboard';
+
+  @override
+  String get hubStorage => 'Speicher';
+
+  @override
+  String get hubSoftware => 'Software & Updates';
+
+  @override
+  String get hubSystem => 'System';
+
+  @override
+  String get hubSearch => 'Suche';
+
+  @override
+  String get quickActions => 'Schnellaktionen';
+
+  @override
+  String get hubSearchPlaceholder =>
+      'Apps, Dateien, Einstellungen und Aktionen durchsuchen...';
+
+  @override
+  String get copyCommand => 'Befehl kopieren';
+
+  @override
+  String get copied => 'Kopiert';
+
+  @override
+  String get readOnly => 'Nur Lesen';
+
+  @override
+  String get readOnlyNotice =>
+      'Diese Ansicht liest dein System nur aus. Sie ändert nichts.';
+
+  @override
+  String get whyItMatters => 'Warum das relevant ist';
+
+  @override
+  String get checkItYourself => 'Selbst prüfen oder ändern';
+
+  @override
+  String get severityCritical => 'Kritisch';
+
+  @override
+  String get severityHigh => 'Hoch';
+
+  @override
+  String get severityMedium => 'Mittel';
+
+  @override
+  String get severityInfo => 'Info';
+
+  @override
+  String get uptimeLabel => 'Laufzeit';
+
+  @override
+  String get processesLabel => 'Prozesse';
+
+  @override
+  String get zombiesLabel => 'Zombies';
+
+  @override
+  String get swapLabel => 'Swap';
+
+  @override
+  String get themeSystem => 'System folgen';
+
+  @override
+  String get themeLight => 'Hell';
+
+  @override
+  String get themeDark => 'Dunkel';
+
+  @override
+  String get switchTheme => 'Design wechseln';
+
+  @override
+  String get useDistroColors => 'Farben der Distribution verwenden';
+
+  @override
+  String get useDistroColorsDescription =>
+      'Ersetzt die Standard-Akzentfarbe durch eine zur Distribution passende Farbe.';
+
+  @override
+  String get collectingData => 'Systemdaten werden erfasst...';
+
+  @override
+  String get statsUnavailable =>
+      'Systemdaten konnten nicht gelesen werden. Es werden die letzten bekannten Werte angezeigt.';
+
+  @override
+  String get kernelLabel => 'Kernel';
+
+  @override
+  String get desktopLabel => 'Desktop';
+
+  @override
+  String get hostLabel => 'Host';
+
+  @override
+  String get collapseSidebar => 'Seitenleiste einklappen';
+
+  @override
+  String get expandSidebar => 'Seitenleiste ausklappen';
+
+  @override
+  String get noQuickActions => 'Noch keine Schnellaktionen verfügbar.';
+
+  @override
+  String get topProcesses => 'Top-Prozesse';
+
+  @override
+  String get mountedDisks => 'Eingebundene Datenträger';
+
+  @override
+  String get securityReadOnlyIntro =>
+      'Linux Assistant prüft diese Einstellungen, ohne sie zu verändern. Zu jedem Befund gibt es den Befehl, um selbst nachzusehen oder etwas zu ändern.';
+
+  @override
+  String get uptimeUnitShortMinutes => 'Min.';
+
+  @override
+  String get uptimeUnitShortHours => 'Std.';
+
+  @override
+  String get uptimeUnitShortDays => 'Tg.';
+
+  @override
+  String ofTotal(String total) {
+    return 'von $total';
+  }
+
+  @override
+  String updatesAvailableCount(int count) {
+    return '$count Updates verfügbar';
+  }
+
+  @override
+  String get whyFirewall =>
+      'Eine Firewall blockiert eingehende Verbindungen, die du nie zulassen wolltest.';
+
+  @override
+  String get whySsh =>
+      'Ein SSH-Server nimmt Anmeldungen über das Netzwerk an. Läuft er ungewollt, vergrößert das die Angriffsfläche.';
+
+  @override
+  String get whyFail2ban =>
+      'Ohne fail2ban werden wiederholte fehlgeschlagene SSH-Anmeldungen weder gebremst noch blockiert.';
+
+  @override
+  String get whyXrdp =>
+      'Ein Remote-Desktop-Server gibt deine gesamte Sitzung über das Netzwerk frei.';
+
+  @override
+  String get whyHomeFolder =>
+      'Ein für alle lesbares Home-Verzeichnis erlaubt jedem lokalen Konto, deine persönlichen Dateien zu lesen.';
+
+  @override
+  String get whyUpdates =>
+      'Ausstehende Updates enthalten häufig Sicherheitskorrekturen.';
+
+  @override
+  String get whySources =>
+      'Fremdquellen können Pakete liefern, die Systempakete ersetzen.';
+
+  @override
+  String get whyYay =>
+      'AUR-Helfer installieren Community-Pakete, die niemand für dich geprüft hat.';
 }

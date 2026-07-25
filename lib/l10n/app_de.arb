@@ -128,7 +128,7 @@
   "openLinuxAssistantFasterDescription": "Mit der Tastenkombination {modifier} + <Q> könntest Du direkt Deinen Assistenten schneller öffnen.\nUm mit Deinem Rechner produktiver zu arbeiten, wird dieser Schritt wärmstens empfohlen.",
   "@openLinuxAssistantFasterDescription": {
     "placeholders": {
-      "modifier" : {
+      "modifier": {
         "type": "Object"
       }
     },
@@ -153,7 +153,7 @@
   "youCanOpenLinuxAssistantWithHotkey": "Du kannst den Linux-Assistant immer mit der Tastenkombination {modifier} + <Q> öffnen. Wenn dies noch nicht funktioniert, rufe in der Suche 'Tastatur Kurzbefehl' auf.",
   "@youCanOpenLinuxAssistantWithHotkey": {
     "placeholders": {
-      "modifier" : {
+      "modifier": {
         "type": "Object"
       }
     },
@@ -169,10 +169,10 @@
   "uptimeWarning": "Dein Linux-System wurde schon lange nicht mehr neu gestartet. Um potentielle Fehler zu vermeiden werden regelmäßige Neustarts empfohlen. Der letzte Neustart war vor {time} {unit}.",
   "@uptimeWarning": {
     "placeholders": {
-      "time" : {
+      "time": {
         "type": "Object"
       },
-      "unit" : {
+      "unit": {
         "type": "Object"
       }
     },
@@ -182,10 +182,10 @@
   "uptimePass": "Dein Linux-System läuft erst seit {time} {unit}. Das ist gut!",
   "@uptimePass": {
     "placeholders": {
-      "time" : {
+      "time": {
         "type": "Object"
       },
-      "unit" : {
+      "unit": {
         "type": "Object"
       }
     },
@@ -198,10 +198,10 @@
   "processesWithZombiesMessage": "Aktuell laufen {processes} Prozesse. Von diesen wurden {zombies} Zombies gefunden.",
   "@processesWithZombiesMessage": {
     "placeholders": {
-      "processes" : {
+      "processes": {
         "type": "Object"
       },
-      "zombies" : {
+      "zombies": {
         "type": "Object"
       }
     },
@@ -211,7 +211,7 @@
   "removableDevicesWarning": "Es wurden {removableDevices} entfernbare Speicher-Geräte/(Partitionen) gefunden. Wenn Du diese aktuell nicht benötigst, wird aufgrund Sicherheitsgründen und der Gesundheit dieser Geräte empfohlen, diese zu entfernen.",
   "@removableDevicesWarning": {
     "placeholders": {
-      "removableDevices" : {
+      "removableDevices": {
         "type": "Object"
       }
     },
@@ -232,7 +232,7 @@
   "applyUpdatesSinceReleaseDescription": "Seit der Veröffentlichung der aktuellen {distro}-Version sind unter Umständen Aktualisierungen verfügbar. Wende diese Aktualisierungen an.",
   "@applyUpdatesSinceReleaseDescription": {
     "placeholders": {
-      "distro" : {
+      "distro": {
         "type": "Object"
       }
     },
@@ -246,7 +246,7 @@
   "setUpLinuxAssistantKeyboardShortcut": "Richte die Tastenkombination {modifier} + <Q> ein, um Linux-Assistant von überall aus schnell zu öffnen.",
   "@setUpLinuxAssistantKeyboardShortcut": {
     "placeholders": {
-      "modifier" : {
+      "modifier": {
         "type": "Object"
       }
     },
@@ -264,7 +264,7 @@
   "installX": "Installiere {app}",
   "@installX": {
     "placeholders": {
-      "app" : {
+      "app": {
         "type": "Object"
       }
     },
@@ -274,7 +274,7 @@
   "installingXDescription": "Installiere {app}...\nSie müssen {app} danach separat öffnen.",
   "@installingXDescription": {
     "placeholders": {
-      "app" : {
+      "app": {
         "type": "Object"
       }
     },
@@ -320,7 +320,7 @@
   "activate": "Aktivieren",
   "active": "Aktiv",
   "installPowerProfilesDeamonDescription": "Um den Leistungsmodus zu ändern, wird power-profiles-deamon benötigt. Möchtest Du diesen installieren?",
-  "folderRecursionDepth" : "Ordner-Rekursions-Tiefe",
+  "folderRecursionDepth": "Ordner-Rekursions-Tiefe",
   "shutdownAfterwards": "Rechner danach herunterfahren",
   "versionOfLinuxAssistant": "Version von Linux-Assistant",
   "urls": "URL",
@@ -330,7 +330,7 @@
   "uninstallingXDescription": "Deinstalliere {app}...",
   "@uninstallingXDescription": {
     "placeholders": {
-      "app" : {
+      "app": {
         "type": "Object"
       }
     },
@@ -340,17 +340,17 @@
   "uninstallApp": "Deinstalliere {app}",
   "@uninstallApp": {
     "placeholders": {
-      "app" : {
+      "app": {
         "type": "Object"
       }
     },
     "description": "",
     "type": "text"
-  },  
+  },
   "uninstallAppWarning": "Möchtest Du wirklich {app} deinstallieren?\nDas System könnte danach nicht mehr richtig funktionieren.\nBitte deinstalliere nur Programme, die Du selber installiert hast.",
   "@uninstallAppWarning": {
     "placeholders": {
-      "app" : {
+      "app": {
         "type": "Object"
       }
     },
@@ -374,7 +374,7 @@
   "back": "Zurück",
   "@cleanX": {
     "placeholders": {
-      "app" : {
+      "app": {
         "type": "Object"
       }
     },
@@ -923,6 +923,320 @@
     "type": "text"
   },
   "@sendingFeedback": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "dashboard": "Dashboard",
+  "@dashboard": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "hubStorage": "Speicher",
+  "@hubStorage": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "hubSoftware": "Software & Updates",
+  "@hubSoftware": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "hubSystem": "System",
+  "@hubSystem": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "hubSearch": "Suche",
+  "@hubSearch": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "quickActions": "Schnellaktionen",
+  "@quickActions": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "hubSearchPlaceholder": "Apps, Dateien, Einstellungen und Aktionen durchsuchen...",
+  "@hubSearchPlaceholder": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "copyCommand": "Befehl kopieren",
+  "@copyCommand": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "copied": "Kopiert",
+  "@copied": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "readOnly": "Nur Lesen",
+  "@readOnly": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "readOnlyNotice": "Diese Ansicht liest dein System nur aus. Sie ändert nichts.",
+  "@readOnlyNotice": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "whyItMatters": "Warum das relevant ist",
+  "@whyItMatters": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "checkItYourself": "Selbst prüfen oder ändern",
+  "@checkItYourself": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "severityCritical": "Kritisch",
+  "@severityCritical": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "severityHigh": "Hoch",
+  "@severityHigh": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "severityMedium": "Mittel",
+  "@severityMedium": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "severityInfo": "Info",
+  "@severityInfo": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "uptimeLabel": "Laufzeit",
+  "@uptimeLabel": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "processesLabel": "Prozesse",
+  "@processesLabel": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "zombiesLabel": "Zombies",
+  "@zombiesLabel": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "swapLabel": "Swap",
+  "@swapLabel": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "themeSystem": "System folgen",
+  "@themeSystem": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "themeLight": "Hell",
+  "@themeLight": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "themeDark": "Dunkel",
+  "@themeDark": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "switchTheme": "Design wechseln",
+  "@switchTheme": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "useDistroColors": "Farben der Distribution verwenden",
+  "@useDistroColors": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "useDistroColorsDescription": "Ersetzt die Standard-Akzentfarbe durch eine zur Distribution passende Farbe.",
+  "@useDistroColorsDescription": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "collectingData": "Systemdaten werden erfasst...",
+  "@collectingData": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "statsUnavailable": "Systemdaten konnten nicht gelesen werden. Es werden die letzten bekannten Werte angezeigt.",
+  "@statsUnavailable": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "kernelLabel": "Kernel",
+  "@kernelLabel": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "desktopLabel": "Desktop",
+  "@desktopLabel": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "hostLabel": "Host",
+  "@hostLabel": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "collapseSidebar": "Seitenleiste einklappen",
+  "@collapseSidebar": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "expandSidebar": "Seitenleiste ausklappen",
+  "@expandSidebar": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "noQuickActions": "Noch keine Schnellaktionen verfügbar.",
+  "@noQuickActions": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "topProcesses": "Top-Prozesse",
+  "@topProcesses": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "mountedDisks": "Eingebundene Datenträger",
+  "@mountedDisks": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "securityReadOnlyIntro": "Linux Assistant prüft diese Einstellungen, ohne sie zu verändern. Zu jedem Befund gibt es den Befehl, um selbst nachzusehen oder etwas zu ändern.",
+  "@securityReadOnlyIntro": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "uptimeUnitShortMinutes": "Min.",
+  "@uptimeUnitShortMinutes": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "uptimeUnitShortHours": "Std.",
+  "@uptimeUnitShortHours": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "uptimeUnitShortDays": "Tg.",
+  "@uptimeUnitShortDays": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "ofTotal": "von {total}",
+  "@ofTotal": {
+    "placeholders": {
+      "total": {
+        "type": "String"
+      }
+    },
+    "description": "",
+    "type": "text"
+  },
+  "updatesAvailableCount": "{count} Updates verfügbar",
+  "@updatesAvailableCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    },
+    "description": "",
+    "type": "text"
+  },
+  "whyFirewall": "Eine Firewall blockiert eingehende Verbindungen, die du nie zulassen wolltest.",
+  "@whyFirewall": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "whySsh": "Ein SSH-Server nimmt Anmeldungen über das Netzwerk an. Läuft er ungewollt, vergrößert das die Angriffsfläche.",
+  "@whySsh": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "whyFail2ban": "Ohne fail2ban werden wiederholte fehlgeschlagene SSH-Anmeldungen weder gebremst noch blockiert.",
+  "@whyFail2ban": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "whyXrdp": "Ein Remote-Desktop-Server gibt deine gesamte Sitzung über das Netzwerk frei.",
+  "@whyXrdp": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "whyHomeFolder": "Ein für alle lesbares Home-Verzeichnis erlaubt jedem lokalen Konto, deine persönlichen Dateien zu lesen.",
+  "@whyHomeFolder": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "whyUpdates": "Ausstehende Updates enthalten häufig Sicherheitskorrekturen.",
+  "@whyUpdates": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "whySources": "Fremdquellen können Pakete liefern, die Systempakete ersetzen.",
+  "@whySources": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "whyYay": "AUR-Helfer installieren Community-Pakete, die niemand für dich geprüft hat.",
+  "@whyYay": {
     "placeholders": {},
     "description": "",
     "type": "text"

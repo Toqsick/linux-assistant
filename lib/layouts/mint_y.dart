@@ -1,11 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
+import 'package:linux_assistant/layouts/hermes_tokens.dart';
 
 class MintY {
-  static Color currentColor = const Color(0xff6db443);
+  /// Accent used for buttons, icons and the header gradient.
+  ///
+  /// Defaults to the Hermes gold. `MyApp.setMainColor()` may replace it with a
+  /// distribution-specific color when the user opts into that.
+  static Color currentColor = HermesTokens.light.accent;
 
-  static Color secondaryColor = const Color(0xff2ab9a4);
+  static Color secondaryColor = HermesTokens.light.accentHover;
 
   static bool dark = false;
   static MaterialColor currentColorTheme = green;
@@ -56,14 +61,16 @@ class MintY {
     },
   );
 
-  static BoxDecoration colorfulBackground = BoxDecoration(
-    gradient: LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      stops: const [0, 1],
-      colors: [currentColor, secondaryColor],
-    ),
-  );
+  /// A getter, not a field: as a field it captured [currentColor] once at class
+  /// load time and kept showing the old gradient after a color or theme change.
+  static BoxDecoration get colorfulBackground => BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          stops: const [0, 1],
+          colors: [currentColor, secondaryColor],
+        ),
+      );
 
   static const Color _white = Color.fromARGB(255, 255, 255, 255);
 
@@ -73,8 +80,11 @@ class MintY {
       fontWeight: FontWeight.w500,
       decoration: TextDecoration.none);
 
+  // The non-White styles deliberately carry no color: they inherit it from the
+  // ambient DefaultTextStyle, which the active theme drives. That is what makes
+  // them legible in dark mode. The *White variants keep an explicit color
+  // because they sit on the accent gradient, where white is always correct.
   static const heading1 = TextStyle(
-      color: Colors.black,
       fontSize: 32,
       fontWeight: FontWeight.w500,
       decoration: TextDecoration.none);
@@ -86,7 +96,6 @@ class MintY {
       decoration: TextDecoration.none);
 
   static const heading2 = TextStyle(
-      color: Colors.black,
       fontSize: 24,
       fontWeight: FontWeight.w400,
       decoration: TextDecoration.none);
@@ -98,7 +107,6 @@ class MintY {
       decoration: TextDecoration.none);
 
   static const heading3 = TextStyle(
-      color: Colors.black,
       fontSize: 20,
       fontWeight: FontWeight.w400,
       decoration: TextDecoration.none);
@@ -110,14 +118,12 @@ class MintY {
       decoration: TextDecoration.none);
 
   static const heading4 = TextStyle(
-      color: Colors.black,
       fontSize: 17,
       fontWeight: FontWeight.w400,
       decoration: TextDecoration.none);
 
   static const paragraph = TextStyle(
       fontWeight: FontWeight.w400,
-      color: Colors.black,
       decoration: TextDecoration.none,
       fontSize: 15);
 
@@ -128,76 +134,148 @@ class MintY {
     fontSize: 15,
   );
 
-  static ThemeData theme() => ThemeData(
-      useMaterial3: true,
-      primaryColor: currentColor,
-      brightness: Brightness.light,
-      // backgroundColor: Colors.white70,
-      textTheme: const TextTheme(
-        displayLarge: heading1,
-        displayMedium: heading1,
-        displaySmall: heading2,
-        headlineLarge: heading2,
-        headlineMedium: heading3,
-        headlineSmall: heading4,
-        titleLarge: heading3,
-        titleMedium: heading4,
-        titleSmall: paragraph,
-        bodyLarge: paragraph,
-        bodyMedium: paragraph,
-        bodySmall: paragraph,
-        labelLarge: paragraph,
-        labelMedium: paragraph,
-        labelSmall: paragraph,
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        border: OutlineInputBorder(
-          borderSide: BorderSide(color: MintY.currentColor),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(
-              color: MintY.currentColor, width: 2, style: BorderStyle.solid),
-        ),
-      ),
-      textSelectionTheme:
-          TextSelectionThemeData(selectionColor: MintY.currentColor));
+  /// [accent] overrides the Hermes gold, e.g. with a distribution color. The
+  /// derived tints and text colors are recomputed so contrast stays valid.
+  static ThemeData theme({Color? accent}) => _buildTheme(
+        accent == null
+            ? HermesTokens.light
+            : HermesTokens.light.withAccent(accent),
+        Brightness.light,
+      );
 
-  static ThemeData themeDark() => ThemeData(
+  static ThemeData themeDark({Color? accent}) => _buildTheme(
+        accent == null
+            ? HermesTokens.dark
+            : HermesTokens.dark.withAccent(accent),
+        Brightness.dark,
+      );
+
+  /// Builds a theme from a [HermesTokens] palette.
+  ///
+  /// Both brightnesses go through here so that light and dark can never drift
+  /// apart. The previous themes set only `primaryColor` and left `colorScheme`
+  /// at its default, which meant every Material 3 component ignored the app's
+  /// colors entirely.
+  static ThemeData _buildTheme(HermesTokens t, Brightness brightness) {
+    final isDark = brightness == Brightness.dark;
+
+    final scheme = ColorScheme(
+      brightness: brightness,
+      primary: t.accent,
+      onPrimary: t.onAccent,
+      primaryContainer: t.accentBgStrong,
+      onPrimaryContainer: t.accentText,
+      secondary: t.info,
+      onSecondary: isDark ? t.bg : const Color(0xFFFFFFFF),
+      secondaryContainer: t.surfaceSubtle,
+      onSecondaryContainer: t.text,
+      tertiary: t.accentText,
+      onTertiary: isDark ? t.bg : const Color(0xFFFFFFFF),
+      error: t.error,
+      onError: isDark ? t.bg : const Color(0xFFFFFFFF),
+      errorContainer: t.surfaceSubtle,
+      onErrorContainer: t.error,
+      surface: t.bg,
+      onSurface: t.text,
+      onSurfaceVariant: t.muted,
+      surfaceContainerLowest: t.bg,
+      surfaceContainerLow: t.sidebar,
+      surfaceContainer: t.surfaceSubtle,
+      surfaceContainerHigh: t.surface,
+      surfaceContainerHighest: t.surfaceSubtleHover,
+      outline: t.border,
+      outlineVariant: t.borderSubtle,
+      inverseSurface: t.text,
+      onInverseSurface: t.bg,
+      inversePrimary: t.accentHover,
+      shadow: const Color(0xFF000000),
+      scrim: const Color(0xFF000000),
+    );
+
+    // The heading/paragraph styles carry no color of their own, so apply the
+    // token colors once here instead of duplicating a *White variant per slot.
+    const base = TextTheme(
+      displayLarge: heading1,
+      displayMedium: heading1,
+      displaySmall: heading2,
+      headlineLarge: heading2,
+      headlineMedium: heading3,
+      headlineSmall: heading4,
+      titleLarge: heading3,
+      titleMedium: heading4,
+      titleSmall: paragraph,
+      bodyLarge: paragraph,
+      bodyMedium: paragraph,
+      bodySmall: paragraph,
+      labelLarge: paragraph,
+      labelMedium: paragraph,
+      labelSmall: paragraph,
+    );
+
+    return ThemeData(
       useMaterial3: true,
-      primaryColor: currentColor,
-      canvasColor: const Color.fromARGB(255, 31, 31, 31),
-      brightness: Brightness.dark,
-      // backgroundColor: const Color.fromARGB(255, 31, 31, 31),
-      cardColor: const Color.fromARGB(255, 45, 45, 45),
-      highlightColor: _white,
-      textTheme: const TextTheme(
-        displayLarge: heading1White,
-        displayMedium: heading1White,
-        displaySmall: heading2White,
-        headlineLarge: heading2White,
-        headlineMedium: heading3White,
-        headlineSmall: heading4White,
-        titleLarge: heading3White,
-        titleMedium: heading4White,
-        titleSmall: paragraphWhite,
-        bodyLarge: paragraphWhite,
-        bodyMedium: paragraphWhite,
-        bodySmall: paragraphWhite,
-        labelLarge: paragraphWhite,
-        labelMedium: paragraphWhite,
-        labelSmall: paragraphWhite,
+      brightness: brightness,
+      colorScheme: scheme,
+      primaryColor: t.accent,
+      scaffoldBackgroundColor: t.bg,
+      canvasColor: t.bg,
+      cardColor: t.surface,
+      dividerColor: t.border,
+      hoverColor: t.hoverBg,
+      extensions: <ThemeExtension<dynamic>>[t],
+      textTheme: base.apply(
+        bodyColor: t.text,
+        displayColor: t.strong,
+      ),
+      dividerTheme: DividerThemeData(
+        color: t.border,
+        space: 1,
+        thickness: HermesTokens.borderWidth,
+      ),
+      cardTheme: CardThemeData(
+        color: t.surface,
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(HermesTokens.radiusMd),
+          side: BorderSide(color: t.border, width: HermesTokens.borderWidth),
+        ),
+      ),
+      iconTheme: IconThemeData(color: t.muted),
+      tooltipTheme: TooltipThemeData(
+        decoration: BoxDecoration(
+          color: t.surface,
+          border: Border.all(color: t.border, width: HermesTokens.borderWidth),
+          borderRadius: BorderRadius.circular(HermesTokens.radiusSm),
+        ),
+        textStyle: TextStyle(color: t.text, fontSize: 12),
       ),
       inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: t.surfaceSubtle,
+        hintStyle: TextStyle(color: t.muted),
         border: OutlineInputBorder(
-          borderSide: BorderSide(color: MintY.currentColor),
+          borderRadius: BorderRadius.circular(HermesTokens.radiusMd),
+          borderSide:
+              BorderSide(color: t.border, width: HermesTokens.borderWidth),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(HermesTokens.radiusMd),
+          borderSide:
+              BorderSide(color: t.border, width: HermesTokens.borderWidth),
         ),
         focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(
-              color: MintY.currentColor, width: 2, style: BorderStyle.solid),
+          borderRadius: BorderRadius.circular(HermesTokens.radiusMd),
+          borderSide: BorderSide(color: t.accent, width: 2),
         ),
       ),
-      textSelectionTheme:
-          TextSelectionThemeData(selectionColor: MintY.currentColor));
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: t.accent,
+        selectionColor: t.accentBgStrong,
+        selectionHandleColor: t.accent,
+      ),
+    );
+  }
 
   static void showMessage(
       BuildContext context, String message, VoidCallback? callback) {

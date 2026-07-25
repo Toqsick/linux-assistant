@@ -33,6 +33,12 @@ abstract class LinuxFilesystem {
         "/usr/bin/df", ["-h"],
         getErrorMessages: false);
 
+    return parseDfOutput(cmdResult);
+  }
+
+  /// Pure parser for `df -h` output, split out so it can be tested without
+  /// shelling out.
+  static List<DeviceInfo> parseDfOutput(String cmdResult) {
     Iterable<String> lines = cmdResult
         .split("\n")
         .skip(1)
