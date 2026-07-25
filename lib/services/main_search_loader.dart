@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:linux_assistant/content/basic_entries.dart';
 import 'package:linux_assistant/content/recommendations.dart';
+import 'package:linux_assistant/layouts/hub/hub_shell.dart';
 import 'package:linux_assistant/layouts/main_screen/main_search.dart';
 import 'package:linux_assistant/layouts/mint_y.dart';
 import 'package:linux_assistant/models/action_entry.dart';
@@ -11,8 +12,24 @@ import 'package:linux_assistant/services/linux.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
 import 'package:logger/logger.dart';
 
+/// What the loader shows once the action catalog is ready.
+enum LoaderDestination {
+  /// The launcher-style search screen.
+  search,
+
+  /// The hub, with the dashboard selected.
+  hub,
+}
+
 class MainSearchLoader extends StatefulWidget {
-  const MainSearchLoader({Key? key}) : super(key: key);
+  const MainSearchLoader({
+    super.key,
+    this.destination = LoaderDestination.search,
+  });
+
+  /// Defaults to [LoaderDestination.search] so the many existing "back to
+  /// search" buttons keep behaving exactly as before.
+  final LoaderDestination destination;
 
   @override
   State<MainSearchLoader> createState() => _MainSearchLoaderState();
@@ -174,7 +191,9 @@ class _MainSearchLoaderState extends State<MainSearchLoader> {
       future: futureVoid,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done) {
-          return (MainSearch());
+          return widget.destination == LoaderDestination.hub
+              ? const HubShell()
+              : MainSearch();
         } else {
           return MintYLoadingPage(
               text: AppLocalizations.of(context)!.preparingSearch);

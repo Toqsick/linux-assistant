@@ -37,6 +37,15 @@ class MainSearch extends StatefulWidget {
     );
   }
 
+  /// Set by the hub while it is on screen.
+  ///
+  /// The search was built as a launcher overlay: finishing an action minimizes
+  /// the window, and on Wayland quits the app a few seconds later, because
+  /// `wmctrl -a` cannot raise it again there. Inside a hub that is the wrong
+  /// behaviour — there is a window to go back to — so the hub installs a
+  /// callback that returns to the dashboard instead.
+  static VoidCallback? onDismiss;
+
   @override
   State<MainSearch> createState() => _MainSearchState();
 
@@ -387,12 +396,16 @@ class _MainSearchState extends State<MainSearch> {
 
   void clear({minimze = true}) {
     if (minimze) {
-      /// On wayland sessions we currently can't issue 'wmctrl -a'
-      /// So if we want to get the hotkey working we need to close the app after
-      /// a single use. Because otherwise everytime the user presses the hotkey
-      /// an additional window would open.
-      /// On x11 sessions we don't have the issue.
-      if (Linux.currentenvironment.wayland) {
+      final VoidCallback? returnToHub = MainSearch.onDismiss;
+      if (returnToHub != null) {
+        // Running inside the hub: keep the window open and hand control back.
+        returnToHub();
+      } else if (Linux.currentenvironment.wayland) {
+        /// On wayland sessions we currently can't issue 'wmctrl -a'
+        /// So if we want to get the hotkey working we need to close the app
+        /// after a single use. Because otherwise everytime the user presses
+        /// the hotkey an additional window would open.
+        /// On x11 sessions we don't have the issue.
         windowManager.minimize();
         Future.delayed(const Duration(seconds: 5), () => exit(0));
       } else {

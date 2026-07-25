@@ -68,7 +68,8 @@ class LinuxAssistantUpdatePage extends StatelessWidget {
           );
         } else if (snapshot.connectionState == ConnectionState.done ||
             snapshot.hasError) {
-          return const MainSearchLoader();
+          // This is where startup lands, so it is what opens the hub.
+          return const MainSearchLoader(destination: LoaderDestination.hub);
         } else {
           return const MintYLoadingPage();
         }
