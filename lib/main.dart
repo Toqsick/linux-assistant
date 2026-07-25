@@ -6,9 +6,12 @@ import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:linux_assistant/enums/distros.dart';
 import 'package:linux_assistant/layouts/greeter/flathub_permissions.dart';
 import 'package:linux_assistant/layouts/greeter/start_screen.dart';
+import 'package:linux_assistant/layouts/hermes_tokens.dart';
+import 'package:linux_assistant/layouts/hub/hub_shell.dart';
 import 'package:linux_assistant/layouts/mint_y.dart';
 import 'package:linux_assistant/services/config_handler.dart';
 import 'package:linux_assistant/services/linux.dart';
+import 'package:linux_assistant/services/theme_controller.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
@@ -24,7 +27,7 @@ void main() async {
   await HotKeyManager.instance.unregisterAll();
 
   StatelessWidget firstScreen = const StartScreen();
-  bool darkTheme = false;
+  bool systemIsDark = false;
 
   // Are we in a flatpak? Is the folder /app/bin/ present? // Do we have flatpak-spawn?
   var runningInFlatpak = Directory("/app/bin/").existsSync();
@@ -42,9 +45,8 @@ void main() async {
   if (firstScreen is StartScreen) {
     await Linux.init();
 
-    darkTheme = await Linux.isDarkThemeEnabled();
-    darkTheme =
-        await ConfigHandler().getValue("dark_theme_activated", darkTheme);
+    systemIsDark = await Linux.isDarkThemeEnabled();
+    await ThemeController().load(systemIsDark: systemIsDark);
 
     String versionFile = "${Linux.executableFolder}/version";
     if (await File(versionFile).exists()) {
@@ -58,37 +60,25 @@ void main() async {
   }
 
   runApp(MyApp(
-    darkTheme: darkTheme,
+    systemIsDark: systemIsDark,
     firstPage: firstScreen,
   ));
 }
 
-class MyApp extends StatelessWidget {
-  late bool darkTheme;
-  late StatelessWidget firstPage;
-  MyApp({Key? key, this.darkTheme = false, required this.firstPage})
-      : super(key: key);
+class MyApp extends StatefulWidget {
+  /// What the desktop environment reports, used when the user follows the
+  /// system theme.
+  final bool systemIsDark;
+  final Widget firstPage;
+
+  const MyApp({
+    super.key,
+    this.systemIsDark = false,
+    required this.firstPage,
+  });
+
   @override
-  Widget build(BuildContext context) {
-    setMainColor();
-    initHotkeyToShowUp();
-    return MaterialApp(
-      title: 'Linux Assistant',
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale('en', ''),
-        Locale('de', ''),
-        Locale('it', ''),
-      ],
-      theme: darkTheme ? MintY.themeDark() : MintY.theme(),
-      home: firstPage,
-    );
-  }
+  State<MyApp> createState() => _MyAppState();
 
   static void initHotkeyToShowUp() {
     HotKey hotKey = HotKey(
@@ -101,11 +91,28 @@ class MyApp extends StatelessWidget {
       keyDownHandler: (hotKey) {
         Linux.runCommandWithCustomArguments(
             "wmctrl", ["-a", "Linux Assistant"]);
+        // Raising the window is only half the job when the hub is open: the
+        // hotkey is meant to land the user in the search box.
+        HubShell.onSearchRequested?.call();
       },
     );
   }
 
-  static void setMainColor() {
+  /// Applies the accent colors for the current appearance.
+  ///
+  /// The app now ships the Hermes palette by default; the per-distribution
+  /// colors below are opt-in via the `use_distro_colors` setting. An explicit
+  /// `main_color` / `secondary_color` in the config still overrides both.
+  static void setMainColor({required bool isDark}) {
+    final tokens = isDark ? HermesTokens.dark : HermesTokens.light;
+
+    if (!ThemeController().useDistroColors) {
+      MintY.currentColor = tokens.accent;
+      MintY.secondaryColor = tokens.accentHover;
+      _applyConfiguredColorOverrides();
+      return;
+    }
+
     MintY.secondaryColor = const Color(0xff2ab9a4);
     switch (Linux.currentenvironment.distribution) {
       case DISTROS.DEBIAN:
@@ -160,6 +167,10 @@ class MyApp extends StatelessWidget {
       default:
         MintY.currentColor = Colors.blue;
     }
+    _applyConfiguredColorOverrides();
+  }
+
+  static void _applyConfiguredColorOverrides() {
     ConfigHandler configHandler = ConfigHandler();
     String colorString = configHandler.getValueUnsafe("main_color", "");
     if (colorString.isNotEmpty) {
@@ -169,5 +180,59 @@ class MyApp extends StatelessWidget {
     if (colorString.isNotEmpty) {
       MintY.secondaryColor = HexColor(colorString);
     }
+  }
+}
+
+class _MyAppState extends State<MyApp> {
+  final ThemeController _themeController = ThemeController();
+
+  @override
+  void initState() {
+    super.initState();
+    MyApp.initHotkeyToShowUp();
+    _themeController.addListener(_onAppearanceChanged);
+  }
+
+  @override
+  void dispose() {
+    _themeController.removeListener(_onAppearanceChanged);
+    super.dispose();
+  }
+
+  void _onAppearanceChanged() => setState(() {});
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isDark = _themeController.isDark(widget.systemIsDark);
+
+    // Widgets that predate the theme extension read this static directly.
+    MintY.dark = isDark;
+    MyApp.setMainColor(isDark: isDark);
+
+    final Color? accent =
+        _themeController.useDistroColors ? MintY.currentColor : null;
+
+    return MaterialApp(
+      title: 'Linux Assistant',
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en', ''),
+        Locale('de', ''),
+        Locale('it', ''),
+      ],
+      theme: MintY.theme(accent: accent),
+      darkTheme: MintY.themeDark(accent: accent),
+      // Resolved here rather than handed to Flutter as ThemeMode.system: the
+      // desktop's setting comes from gsettings/kdeglobals via
+      // Linux.isDarkThemeEnabled(), which the platform brightness does not
+      // reliably mirror on Linux.
+      themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
+      home: widget.firstPage,
+    );
   }
 }
