@@ -80,10 +80,28 @@ class MyApp extends StatefulWidget {
   @override
   State<MyApp> createState() => _MyAppState();
 
+  /// Makes the "bring me up" shortcut work for the session we are in.
+  ///
+  /// Two mechanisms exist and only one of them can work per session type. On
+  /// X11 the app grabs the key itself through libkeybinder. Wayland has no
+  /// global X11 grab at all, so that call can only ever fail there — it is
+  /// what wrote `Binding '<Meta>q' failed!` to the log on every invocation —
+  /// and the desktop's own shortcut is the only route that carries.
   static void initHotkeyToShowUp() {
+    if (Linux.currentenvironment.wayland) {
+      _ensureDesktopShortcut();
+      return;
+    }
     HotKey hotKey = HotKey(
       key: PhysicalKeyboardKey.keyQ,
-      modifiers: [HotKeyModifier.meta],
+      // Has to agree with what `setup_keybinding.py` writes and with what the
+      // greeter tells the user. Hardcoding meta meant the app grabbed Super+Q
+      // on Zorin, Ubuntu and Pop!_OS while advertising Alt+Q.
+      modifiers: [
+        Linux.get_hotkey_modifier() == "<Alt>"
+            ? HotKeyModifier.alt
+            : HotKeyModifier.meta
+      ],
       scope: HotKeyScope.system,
     );
     hotKeyManager.register(
@@ -96,6 +114,24 @@ class MyApp extends StatefulWidget {
         HubShell.onSearchRequested?.call();
       },
     );
+  }
+
+  /// Registers the shortcut with the desktop itself, once.
+  ///
+  /// [Linux.activateSystemHotkeyForLinuxAssistant] runs `setup_keybinding.py`,
+  /// which writes a gsettings entry. Doing that on every start would stack up
+  /// shortcuts, so the flag records that it happened. The script skips an
+  /// entry it already owns as well, which covers the case where the app dies
+  /// before the flag reaches disk.
+  static void _ensureDesktopShortcut() {
+    final ConfigHandler configHandler = ConfigHandler();
+    // Compared rather than used directly: the getter is untyped and the value
+    // comes from a file the user can edit.
+    if (configHandler.getValueUnsafe("keybinding_registered", false) == true) {
+      return;
+    }
+    Linux.activateSystemHotkeyForLinuxAssistant();
+    configHandler.setValue("keybinding_registered", true);
   }
 
   /// Applies the accent colors for the current appearance.

@@ -17,6 +17,18 @@ def add_linux_assistant_keybinding_cinnamon():
 
     # Generate new name
     array = parent.get_strv("custom-list")
+
+    existing = find_own_keybinding(
+        CUSTOM_KEYS_SCHEMA_CINNAMON,
+        [f"{CUSTOM_KEYS_BASENAME_CINNAMON}/{name}/"
+         for name in array if name != DUMMY_CUSTOM_ENTRY_CINNAMON])
+    if existing is not None:
+        entry = Gio.Settings.new_with_path(CUSTOM_KEYS_SCHEMA_CINNAMON, existing)
+        entry.set_strv("binding", [f"{KEY_MODIFIER}q"])
+        entry.sync()
+        entry.apply()
+        return
+
     num_array = []
     for entry in array:
         if entry == DUMMY_CUSTOM_ENTRY_CINNAMON:
@@ -54,11 +66,40 @@ CUSTOM_KEYS_PARENT_SCHEMA_GNOME = "org.gnome.settings-daemon.plugins.media-keys"
 CUSTOM_KEYS_BASENAME_GNOME = "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings"
 CUSTOM_KEYS_SCHEMA_GNOME = "org.gnome.settings-daemon.plugins.media-keys.custom-keybinding"
 
+def find_own_keybinding(schema, paths):
+    """Returns the path of a shortcut this app already registered, or None.
+
+    Every run used to append a fresh entry unconditionally, so each setup left
+    another duplicate behind on the same key — and uninstalling the package
+    never took any of them away, because they live in the desktop's settings
+    rather than in the package.
+    """
+    for path in paths:
+        try:
+            entry = Gio.Settings.new_with_path(schema, path)
+            if entry.get_string("command") == "linux-assistant":
+                return path
+        except Exception:
+            # A stale path left in the list by some other tool is not worth
+            # failing the whole setup for.
+            continue
+    return None
+
+
 def add_linux_assistant_keybinding_gnome():
     parent = Gio.Settings.new(CUSTOM_KEYS_PARENT_SCHEMA_GNOME)
 
     # Generate new name
     array = parent.get_strv("custom-keybindings")
+
+    existing = find_own_keybinding(CUSTOM_KEYS_SCHEMA_GNOME, array)
+    if existing is not None:
+        entry = Gio.Settings.new_with_path(CUSTOM_KEYS_SCHEMA_GNOME, existing)
+        entry.set_string("binding", f"{KEY_MODIFIER}q")
+        entry.sync()
+        entry.apply()
+        return
+
     num_array = []
     for entry in array:
         if "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom" in entry:
