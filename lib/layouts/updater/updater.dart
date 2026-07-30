@@ -48,7 +48,12 @@ class _LinuxAssistantUpdatePageState extends State<LinuxAssistantUpdatePage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 MintYButtonNavigate(
-                  route: const MainSearchLoader(),
+                  // Same destination as the no-update path below. Without it,
+                  // declining an update drops the user into the launcher
+                  // overlay instead of the hub, which looks like the new
+                  // interface never arrived.
+                  route: const MainSearchLoader(
+                      destination: LoaderDestination.hub),
                   text: Text(
                     AppLocalizations.of(context)!.later,
                     style: MintY.heading4,
@@ -65,7 +70,8 @@ class _LinuxAssistantUpdatePageState extends State<LinuxAssistantUpdatePage> {
                       message: AppLocalizations.of(context)!
                           .linuxAssistantIsUpdating,
                       title: AppLocalizations.of(context)!.update,
-                      route: const MainSearchLoader()),
+                      route: const MainSearchLoader(
+                          destination: LoaderDestination.hub)),
                   text: Text(
                     AppLocalizations.of(context)!.updateNow,
                     style: MintY.heading4White,
