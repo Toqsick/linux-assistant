@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:linux_assistant/content/basic_entries.dart';
 import 'package:linux_assistant/content/recommendations.dart';
@@ -5,7 +7,6 @@ import 'package:linux_assistant/layouts/hub/hub_shell.dart';
 import 'package:linux_assistant/layouts/main_screen/main_search.dart';
 import 'package:linux_assistant/layouts/mint_y.dart';
 import 'package:linux_assistant/models/action_entry.dart';
-import 'package:linux_assistant/models/action_entry_list.dart';
 import 'package:linux_assistant/services/action_entry_list_service.dart';
 import 'package:linux_assistant/services/config_handler.dart';
 import 'package:linux_assistant/services/linux.dart';
@@ -36,14 +37,35 @@ class MainSearchLoader extends StatefulWidget {
 }
 
 class _MainSearchLoaderState extends State<MainSearchLoader> {
-  late Future<void> futureVoid;
+  late final Future<void> futureVoid;
+
+  @override
+  void initState() {
+    super.initState();
+    // Started once, here — not in `build()`. Rebuilds are cheap and frequent
+    // (the hub's theme toggle rebuilds the whole app), while `prepare()` clears
+    // the entry list and re-runs a filesystem scan plus three python scripts.
+    futureVoid = prepare();
+  }
+
+  /// Runs one index module, bounded so a hanging scan cannot wedge the loader.
+  Future<void> _module(String name, Future<void> work) {
+    return work.timeout(
+      const Duration(seconds: 20),
+      onTimeout: () => _onTimeoutOfSearchLoadingModule(name),
+    ).catchError((Object e) {
+      Logger().w("Loading $name failed: $e");
+    });
+  }
 
   Future<void> prepare() async {
     MainSearch.unregisterHotkeysForKeyboardUse();
-    const Duration timeoutDuration = Duration(seconds: 5);
 
     ConfigHandler configHandler = ConfigHandler();
     await configHandler.ensureConfigIsLoaded();
+    if (!mounted) {
+      return;
+    }
     Future clearOldEntries = configHandler.clearOldDatesOfOpenendEntries();
 
     // prepare Action Entries
@@ -61,9 +83,15 @@ class _MainSearchLoaderState extends State<MainSearchLoader> {
 
     ActionEntryListService.clearEntries();
 
+    // These six run concurrently and are intentionally not awaited as a group:
+    // the search box should appear immediately and fill in as results land.
+    // Each one is bounded, though — an unbounded `find` used to be able to run
+    // for minutes with nothing to stop it.
+    final List<Future<void>> modules = [];
+
     if (configHandler.getValueUnsafe("search_filter_basic_folders", true)) {
-      print("Loading basic folders");
-      Linux.getAllFolderEntriesOfUser(context);
+      modules.add(
+          _module("basic folders", Linux.getAllFolderEntriesOfUser(context)));
     }
 
     // if (configHandler.getValueUnsafe("search_filter_applications", true)) {
@@ -74,8 +102,8 @@ class _MainSearchLoaderState extends State<MainSearchLoader> {
     // }
 
     if (configHandler.getValueUnsafe("search_filter_applications", true)) {
-      print("Loading applications");
-      Linux.getAllAvailableApplications();
+      modules.add(
+          _module("applications", Linux.getAllAvailableApplications()));
     }
 
     // if (configHandler.getValueUnsafe(
@@ -87,8 +115,7 @@ class _MainSearchLoaderState extends State<MainSearchLoader> {
 
     if (configHandler.getValueUnsafe(
         "search_filter_recently_used_files_and_folders", true)) {
-      print("Loading recently used files and folders");
-      Linux.getRecentFiles(context);
+      modules.add(_module("recent files", Linux.getRecentFiles(context)));
     }
 
     // if (configHandler.getValueUnsafe(
@@ -100,7 +127,7 @@ class _MainSearchLoaderState extends State<MainSearchLoader> {
 
     if (configHandler.getValueUnsafe(
         "search_filter_favorite_files_and_folder_bookmarks", true)) {
-      Linux.getFavoriteFiles(context);
+      modules.add(_module("favorite files", Linux.getFavoriteFiles(context)));
     }
 
     // if (configHandler.getValueUnsafe("search_filter_bookmarks", true)) {
@@ -111,8 +138,8 @@ class _MainSearchLoaderState extends State<MainSearchLoader> {
     // }
 
     if (configHandler.getValueUnsafe("search_filter_bookmarks", true)) {
-      print("Loading browser bookmarks");
-      Linux.getBrowserBookmarks(context);
+      modules.add(
+          _module("browser bookmarks", Linux.getBrowserBookmarks(context)));
     }
 
     // Deinstallation Entries.
@@ -125,9 +152,10 @@ class _MainSearchLoaderState extends State<MainSearchLoader> {
     // }
     if (configHandler.getValueUnsafe(
         "search_filter_uninstall_software", true)) {
-      print("Loading uninstall entries");
-      Linux.getUninstallEntries(context);
+      modules.add(
+          _module("uninstall entries", Linux.getUninstallEntries(context)));
     }
+    unawaited(Future.wait(modules));
 
     // ActionEntryList returnValue = ActionEntryList(entries: []);
     // returnValue.entries.addAll(getRecommendations(context));
@@ -152,7 +180,6 @@ class _MainSearchLoaderState extends State<MainSearchLoader> {
     // }
 
     // Remove action entries for specific environments
-    print("Removing disabled entries");
     List<ActionEntry> entriesToRemove = [];
     for (ActionEntry entry in functionEntries) {
       if (entry.disableEntryIf != null) {
@@ -167,26 +194,17 @@ class _MainSearchLoaderState extends State<MainSearchLoader> {
       functionEntries.remove(entry);
     }
     ActionEntryListService.addEntries(functionEntries);
-    print("Initiating configHandler");
     await configHandler.setValue("runFirstStartUp", false);
     await clearOldEntries;
-
-    // EntryCache.saveEntries(returnValue.entries);
-
-    // returnValue = EntryCache.loadEntries();
-
-    // return returnValue;
   }
 
-  List<ActionEntry> _onTimeoutOfSearchLoadingModule(String module) {
+  void _onTimeoutOfSearchLoadingModule(String module) {
     Logger().w(
         "Timeout of loading $module! Please report this to the developers on https://www.linux-assistant.org.");
-    return [];
   }
 
   @override
   Widget build(BuildContext context) {
-    futureVoid = prepare();
     return FutureBuilder<dynamic>(
       future: futureVoid,
       builder: (context, snapshot) {

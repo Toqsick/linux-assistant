@@ -201,8 +201,11 @@ class _EnvironmentSelectionViewState extends State<EnvironmentSelectionView> {
                       onPressed: (() {
                         setState(() {
                           environment.desktop = DESKTOPS.values[index];
+                          // `.name`, not the enum: the config is written with
+                          // jsonEncode, which cannot encode a Dart enum and
+                          // threw here, so this setting never persisted.
                           configHandler.setValue(
-                              "desktop", environment.desktop);
+                              "desktop", environment.desktop.name);
                           Navigator.of(context).pop();
                         });
                       }),

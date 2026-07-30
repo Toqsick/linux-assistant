@@ -47,7 +47,9 @@ app.*.map.json
 /android/app/release
 
 linux-assistant.deb
+linux-assistant_*.deb
 /deb/usr/
+/build/deb-root/
 
 /rpmbuild/SOURCES
 

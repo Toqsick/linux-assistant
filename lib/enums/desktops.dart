@@ -20,6 +20,15 @@ String getNiceStringOfDesktopsEnum(var desktop) {
   }
 }
 
+/// Reads a [DESKTOPS] back from its stored name.
+///
+/// Accepts both the plain name ("GNOME", what the settings screen writes) and
+/// the legacy `toString()` form ("DESKTOPS.GNOME"), and falls back rather than
+/// throwing — same reasoning as `getEnumFromString` for distributions.
 DESKTOPS getDektopEnumOfString(str) {
-  return DESKTOPS.values.firstWhere((e) => e.toString() == str);
+  final String value = str.toString();
+  return DESKTOPS.values.firstWhere(
+    (e) => e.name == value || e.toString() == value,
+    orElse: () => DESKTOPS.GNOME,
+  );
 }

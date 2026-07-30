@@ -22,6 +22,12 @@ linter:
   # `// ignore_for_file: name_of_lint` syntax on the line or in the file
   # producing the lint.
   rules:
+    # Worth enabling once `action_handler.dart` has been worked through: a
+    # dropped Future is how several startup bugs got in here (index modules
+    # started and never awaited, so their failures were invisible and their
+    # BuildContext use outlived the widget). Turning it on today adds ~60
+    # findings in code this change does not touch, which would bury the signal.
+    #   unawaited_futures: true
     # avoid_print: false  # Uncomment to disable the `avoid_print` rule
     # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
 

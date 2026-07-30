@@ -22,6 +22,8 @@ cd rpmbuild/SOURCES/
 tar -czvf linux-assistant-$VERSION.tar.gz linux-assistant-$VERSION
 cd ../../
 cp -r rpmbuild $HOME/
-sed -i "2s/.*/Version:        $VERSION/" ./rpmbuild/SPECS/linux-assistant.spec 
+# Matched by field name rather than by line number, so reordering the spec
+# cannot silently overwrite an unrelated field.
+sed -i "s/^Version:.*/Version:        $VERSION/" ./rpmbuild/SPECS/linux-assistant.spec
 rpmbuild -ba ./rpmbuild/SPECS/linux-assistant.spec 
 echo "Your rpm package is now at $HOME/rpmbuild/RPMS/"

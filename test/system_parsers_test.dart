@@ -193,5 +193,71 @@ Swap:              0           0           0
       expect(service.subscriberCount, 0);
       expect(service.isRunning, isFalse);
     });
+
+    test("a section without stats stops the poll despite live subscribers", () {
+      final service = SystemStatsService();
+      addTearDown(service.resetForTesting);
+      service.resetForTesting();
+
+      service.acquire();
+      expect(service.isRunning, isTrue);
+
+      // The hub never disposes a visited section, so the subscriber stays.
+      service.setSectionActive(false);
+      expect(service.subscriberCount, 1);
+      expect(service.isRunning, isFalse);
+
+      service.setSectionActive(true);
+      expect(service.isRunning, isTrue);
+    });
+
+    test("a minimized window stops the poll", () {
+      final service = SystemStatsService();
+      addTearDown(service.resetForTesting);
+      service.resetForTesting();
+
+      service.acquire();
+      service.setWindowVisible(false);
+      expect(service.isRunning, isFalse);
+
+      service.setWindowVisible(true);
+      expect(service.isRunning, isTrue);
+    });
+
+    test("both conditions have to be met before polling resumes", () {
+      final service = SystemStatsService();
+      addTearDown(service.resetForTesting);
+      service.resetForTesting();
+
+      service.acquire();
+      service.setWindowVisible(false);
+      service.setSectionActive(false);
+
+      service.setWindowVisible(true);
+      expect(service.isRunning, isFalse, reason: "section is still inactive");
+
+      service.setSectionActive(true);
+      expect(service.isRunning, isTrue);
+    });
+
+    test("flags alone do not poll without a subscriber", () {
+      final service = SystemStatsService();
+      addTearDown(service.resetForTesting);
+      service.resetForTesting();
+
+      service.setSectionActive(true);
+      service.setWindowVisible(true);
+      expect(service.isRunning, isFalse);
+    });
+  });
+
+  group("loadavg parser", () {
+    test("takes the one-minute figure", () {
+      expect(LinuxSystem.parseLoadAvg("0.52 0.58 0.59 1/1234 5678\n"), 0.52);
+    });
+
+    test("tolerates trailing whitespace", () {
+      expect(LinuxSystem.parseLoadAvg("  1.25 0.90 0.75 2/300 111  "), 1.25);
+    });
   });
 }

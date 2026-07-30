@@ -47,6 +47,14 @@ String getNiceStringOfDistrosEnum(var distro) {
   }
 }
 
+/// Reads a [DISTROS] back from its stored name.
+///
+/// Falls back to Debian instead of throwing: the value comes from the user's
+/// config file, and an unknown one there used to abort startup with a
+/// `StateError` — leaving no way to reach the setting that caused it.
 DISTROS getEnumFromString(String str) {
-  return DISTROS.values.firstWhere((e) => e.name == str);
+  return DISTROS.values.firstWhere(
+    (e) => e.name == str,
+    orElse: () => DISTROS.DEBIAN,
+  );
 }

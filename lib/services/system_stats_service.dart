@@ -117,8 +117,18 @@ class SystemStats {
 /// or `free` again. With eight tiles on screen that is eight process spawns per
 /// tick. This service polls once and notifies listeners.
 ///
-/// Polling is reference counted: [acquire] starts it, [release] stops it when
-/// the last listener goes away, so a backgrounded hub costs nothing.
+/// Polling only runs while it is actually worth something. Three conditions
+/// have to hold at once:
+///
+/// * at least one widget has [acquire]d,
+/// * the section on screen consumes stats ([setSectionActive]), and
+/// * the window is visible ([setWindowVisible]).
+///
+/// The reference count alone is not enough. The hub keeps every visited section
+/// alive inside an `IndexedStack`, so those widgets are never disposed and
+/// [release] is never reached — without the two flags the timer would keep
+/// forking eight processes every three seconds for as long as the app is open,
+/// minimized or not.
 class SystemStatsService {
   static final SystemStatsService _instance = SystemStatsService._();
 
@@ -137,30 +147,62 @@ class SystemStatsService {
   Timer? _timer;
   int _subscribers = 0;
 
+  /// Both default to true so that consumers outside the hub — the launcher's
+  /// `SystemStatus` row, for instance — keep working without opting in.
+  bool _sectionActive = true;
+  bool _windowVisible = true;
+
   /// Guards against overlapping polls: on a busy machine `ps` can take longer
   /// than the interval, and stacking runs would make it worse.
   bool _polling = false;
 
   bool get isRunning => _timer != null;
 
+  bool get _shouldPoll => _subscribers > 0 && _sectionActive && _windowVisible;
+
   @visibleForTesting
   int get subscriberCount => _subscribers;
 
-  /// Registers interest and starts polling if this is the first subscriber.
+  /// Registers interest.
   void acquire() {
     _subscribers++;
-    if (_subscribers == 1) {
-      _start();
-    }
+    _sync();
   }
 
-  /// Drops interest and stops polling once nobody is left.
+  /// Drops interest.
   void release() {
     if (_subscribers == 0) {
       return;
     }
     _subscribers--;
-    if (_subscribers == 0) {
+    _sync();
+  }
+
+  /// Whether the view on screen displays system stats at all. The security and
+  /// search sections do not, and polling for them is pure waste.
+  void setSectionActive(bool active) {
+    if (_sectionActive == active) {
+      return;
+    }
+    _sectionActive = active;
+    _sync();
+  }
+
+  /// Whether the window is on screen. Set from the hub's window listener.
+  void setWindowVisible(bool visible) {
+    if (_windowVisible == visible) {
+      return;
+    }
+    _windowVisible = visible;
+    _sync();
+  }
+
+  void _sync() {
+    if (_shouldPoll) {
+      if (_timer == null) {
+        _start();
+      }
+    } else {
       _stop();
     }
   }
@@ -168,7 +210,9 @@ class SystemStatsService {
   void _start() {
     _timer?.cancel();
     _timer = Timer.periodic(interval, (_) => refresh());
-    // Don't make the first tile wait a full interval for content.
+    // Don't make the first tile wait a full interval for content — this also
+    // covers coming back from a minimized window, where the last snapshot is
+    // as old as the time spent away.
     refresh();
   }
 
@@ -187,7 +231,10 @@ class SystemStatsService {
     try {
       final results = await Future.wait<Object?>([
         LinuxSystem.getCpuAverageLoad(),
-        Linux.runCommand("free -m", hostOnFlatpak: false),
+        // No shell: this runs every three seconds, and with `runInShell` the
+        // call forks a shell in addition to `free` itself.
+        Linux.runCommandWithCustomArguments("free", ["-m"],
+            hostOnFlatpak: false, runInShell: false),
         LinuxFilesystem.disks(),
         LinuxProcess.processCount(),
         LinuxProcess.zombieCount(),
@@ -259,6 +306,8 @@ class SystemStatsService {
   void resetForTesting({SystemStats? seed}) {
     _stop();
     _subscribers = 0;
+    _sectionActive = true;
+    _windowVisible = true;
     _polling = false;
     stats.value = seed ?? const SystemStats();
   }

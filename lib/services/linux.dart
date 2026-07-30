@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -11,7 +11,6 @@ import 'package:linux_assistant/enums/softwareManagers.dart';
 import 'package:linux_assistant/layouts/disk_cleaner/clean_disk.dart';
 import 'package:linux_assistant/layouts/mint_y.dart';
 import 'package:linux_assistant/layouts/run_command_queue.dart';
-import 'package:linux_assistant/linux/linux_filesystem.dart';
 import 'package:linux_assistant/models/action_entry.dart';
 import 'package:linux_assistant/models/environment.dart';
 import 'package:linux_assistant/models/linux_command.dart';
@@ -83,11 +82,17 @@ class Linux {
   /// Returns the stdout and the stderr.
   ///
   /// If [hostOnFlatpak] is set to false, the command will be issued in the flatpak sandbox, if available.
+  ///
+  /// [runInShell] defaults to true for compatibility with the existing call
+  /// sites. Turning it off halves the number of processes spawned — with it,
+  /// every call forks a shell *and* the command — and is safe whenever the
+  /// executable is an absolute path and the arguments need no shell handling.
   static Future<String> runCommandWithCustomArguments(
       String exec, List<String> arguments,
       {bool getErrorMessages = false,
       Map<String, String>? environment,
-      bool hostOnFlatpak = true}) async {
+      bool hostOnFlatpak = true,
+      bool runInShell = true}) async {
     exec = expandCommand(exec);
     if (currentenvironment.runningInFlatpak) {
       arguments.insert(0, exec);
@@ -96,11 +101,17 @@ class Linux {
         arguments.insert(0, "--host");
       }
     }
-    print("Running linux command: $exec with arguments: $arguments");
+    // Debug only: the stats poller alone issues several commands every few
+    // seconds, so an installed build would write to the journal forever.
+    if (kDebugMode) {
+      print("Running linux command: $exec with arguments: $arguments");
+    }
     var result = await Process.run(exec, arguments,
-        runInShell: true, environment: environment);
+        runInShell: runInShell, environment: environment);
     if (result.stderr is String && result.stderr.toString().isNotEmpty) {
-      print(result.stderr);
+      if (kDebugMode) {
+        print(result.stderr);
+      }
       if (getErrorMessages) {
         String returnValue = result.stdout;
         returnValue += result.stderr;
@@ -779,24 +790,34 @@ class Linux {
     runCommand("/usr/bin/xdg-open $website");
   }
 
-  static void getAllFolderEntriesOfUser(BuildContext context) async {
-    // String foldersString = await runCommandWithCustomArguments("python3", [
-    //   "${executableFolder}additional/python/get_folder_structure.py",
-    //   "--recursion_depth=${ConfigHandler().getValueUnsafe("folder_recursion_depth", 3)}"
-    // ]);
-    // List<String> folders = foldersString.split('\n');
+  static Future<void> getAllFolderEntriesOfUser(BuildContext context) async {
+    // Resolved before the first await: the caller does not await this method,
+    // so by the time the scan finishes the context may already be deactivated.
+    final String openLabel = AppLocalizations.of(context)!.openX;
+
     List<String> folders = [];
     homeFolder = getHomeDirectory();
+
+    // Three guards, all of which were missing and all of which have bitten
+    // somebody: `-maxdepth` (a home with node_modules or a synced cloud folder
+    // otherwise yields hundreds of thousands of directories), no `-L` (a
+    // symlink to / or to an unresponsive network mount used to send this off
+    // into the whole filesystem), and a quoted path (a space in the home
+    // directory used to split the command apart).
+    final int depth =
+        ConfigHandler().getValueUnsafe("folder_recursion_depth", 3);
+    final String home = homeFolder.endsWith("/")
+        ? homeFolder.substring(0, homeFolder.length - 1)
+        : homeFolder;
+
     await Linux.runCommandWithCustomArguments(
       "bash",
-      ["-c", "find -L $homeFolder* -type d"],
+      ["-c", "find '${home.replaceAll("'", r"'\''")}' -maxdepth $depth -type d"],
       environment: {"PWD": "/"},
     ).then((value) {
       folders =
           value.split("\n").where((element) => element.isNotEmpty).toList();
     });
-
-    // print("Folders: $folders");
 
     // Get Bookmarks:
     if (currentenvironment.desktop != DESKTOPS.KDE) {
@@ -847,7 +868,7 @@ class Linux {
       }
       ActionEntry entry = ActionEntry(
           name: folderName,
-          description: "${AppLocalizations.of(context)!.openX} $folder",
+          description: "$openLabel $folder",
           action: "openfolder:$folder");
       entry.priority = -10;
       actionEntries.add(entry);
@@ -856,7 +877,7 @@ class Linux {
   }
 
   // Get all available applications, which are installed and .destop files are present.
-  static void getAllAvailableApplications() async {
+  static Future<void> getAllAvailableApplications() async {
     String applicationsString = await runCommandWithCustomArguments("python3", [
       "$pythonScriptsFolder/get_applications.py",
       "--lang=${currentenvironment.language}",
@@ -871,8 +892,6 @@ class Linux {
       if (values.length < 3) {
         continue;
       }
-
-      String appId = values[0].split("/").last.replaceAll(".desktop", "");
 
       ActionEntry entry = ActionEntry(
           name: values[1],
@@ -893,7 +912,9 @@ class Linux {
     await ActionEntryListService.addEntries(actionEntries);
   }
 
-  static void getRecentFiles(BuildContext context) async {
+  static Future<void> getRecentFiles(BuildContext context) async {
+    // Resolved before the await — see [getAllFolderEntriesOfUser].
+    final String openLabel = AppLocalizations.of(context)!.openX;
     String recentFileString = await runPythonScript("get_recent_files.py");
     List<String> recentFiles = recentFileString.split("\n");
     List<ActionEntry> actionEntries = [];
@@ -901,13 +922,38 @@ class Linux {
       String fileName = recentFile.split("/").last;
       ActionEntry actionEntry = ActionEntry(
           name: fileName,
-          description: "${AppLocalizations.of(context)!.openX} $recentFile",
+          description: "$openLabel $recentFile",
           action: "openfile:$recentFile");
       actionEntry.priority = -15;
       actionEntries.add(actionEntry);
     }
     // return actionEntries;
     await ActionEntryListService.addEntries(actionEntries);
+  }
+
+  /// Picks the closest known distribution for one this build does not know,
+  /// using the `ID` and `ID_LIKE` fields of `/etc/os-release`.
+  ///
+  /// `ID_LIKE` is a space separated list ordered from closest to furthest, so
+  /// it is scanned in order: `ID_LIKE="ubuntu debian"` resolves to Ubuntu.
+  static DISTROS distroFromIdLike(String id, String idLike) {
+    for (final String token in [id, ...idLike.split(" ")]) {
+      switch (token.trim().toLowerCase()) {
+        case "ubuntu":
+          return DISTROS.UBUNTU;
+        case "debian":
+          return DISTROS.DEBIAN;
+        case "arch":
+          return DISTROS.ARCH;
+        case "fedora":
+        case "rhel":
+          return DISTROS.FEDORA;
+        case "suse":
+        case "opensuse":
+          return DISTROS.OPENSUSE;
+      }
+    }
+    return DISTROS.DEBIAN;
   }
 
   static Future<Environment> getCurrentEnvironment() async {
@@ -942,6 +988,15 @@ class Linux {
       newEnvironment.distribution = DISTROS.MANJARO;
     } else if (lines[0].toLowerCase().contains("endeavour")) {
       newEnvironment.distribution = DISTROS.ENDEAVOUR;
+    } else {
+      // Unknown distribution. Rather than leaving the field's Debian default
+      // standing silently, use the family the distribution declares itself —
+      // an Ubuntu derivative behaves far more like Ubuntu than like Debian
+      // when it comes to package names and the software centre.
+      newEnvironment.distribution = distroFromIdLike(
+        lines.length > 6 ? lines[6] : "",
+        lines.length > 7 ? lines[7] : "",
+      );
     }
 
     // get version:
@@ -1207,8 +1262,11 @@ class Linux {
         getErrorMessages: getErrorMessages, environment: Platform.environment);
   }
 
+  /// Restricted to the display class on purpose. A bare `lshw` probes PCI, USB,
+  /// SCSI and DMI and routinely takes seconds; `-C display` answers the only
+  /// question asked here and returns immediately.
   static Future<bool> isNvidiaCardInstalledOnSystem() async {
-    String output = await runCommand("lshw");
+    String output = await runCommand("lshw -C display");
     output = output.toLowerCase();
     return output.contains("nvidia");
   }
@@ -1363,7 +1421,9 @@ class Linux {
     return await File("/etc/os-release").readAsString();
   }
 
-  static void getFavoriteFiles(BuildContext context) async {
+  static Future<void> getFavoriteFiles(BuildContext context) async {
+    // Resolved before the await — see [getAllFolderEntriesOfUser].
+    final String openLabel = AppLocalizations.of(context)!.openX;
     String output = await runPythonScript("get_favorite_files.py");
     output = output.trim();
     List<String> list = output.split("\n");
@@ -1373,7 +1433,7 @@ class Linux {
       String fileName = e.split("/").last;
       ActionEntry actionEntry = ActionEntry(
           name: fileName,
-          description: "${AppLocalizations.of(context)!.openX} $e",
+          description: "$openLabel $e",
           action: "openfile:$e");
       actionEntry.priority = -5;
       actionEntries.add(actionEntry);
@@ -1856,7 +1916,7 @@ class Linux {
   }
 
   /// For all package managers including flatpak and snap
-  static void getUninstallEntries(context) async {
+  static Future<void> getUninstallEntries(context) async {
     List<ActionEntry> returnValue = [];
     Future<List<String>> installedAptPackagesFuture = getInstalledAPTPackages();
     Future<List<List<String>>> installedZypperPackagesFuture =
@@ -2015,17 +2075,34 @@ class Linux {
         configHandler.getValueUnsafe("version", currentenvironment.version);
     currentenvironment.versionString = configHandler.getValueUnsafe(
         "versionString", currentenvironment.versionString);
-    currentenvironment.desktop =
-        configHandler.getValueUnsafe("desktop", currentenvironment.desktop);
+    String desktop = configHandler.getValueUnsafe("desktop", "");
+    if (desktop.isNotEmpty) {
+      currentenvironment.desktop = getDektopEnumOfString(desktop);
+    }
     currentenvironment.browser =
         configHandler.getValueUnsafe("browser", currentenvironment.browser);
     currentenvironment.language =
         configHandler.getValueUnsafe("language", currentenvironment.language);
 
-    bool nvidiaCardInstalled = await isNvidiaCardInstalledOnSystem();
-    bool nouveauRunning = await isNouveauCurrentGraphicsDriver();
-    currentenvironment.nvidiaCardAndNouveauRunning =
-        nvidiaCardInstalled && nouveauRunning;
+    // Deliberately not awaited. Its only consumer is the icon workaround in
+    // `SystemIcon`, which reads the flag whenever it builds — waiting for two
+    // hardware probes here would delay the first frame for everyone, on a
+    // question that matters to a minority of machines.
+    unawaited(detectGraphicsSituation());
+  }
+
+  /// Fills [Environment.nvidiaCardAndNouveauRunning] in the background.
+  static Future<void> detectGraphicsSituation() async {
+    try {
+      final results = await Future.wait([
+        isNvidiaCardInstalledOnSystem(),
+        isNouveauCurrentGraphicsDriver(),
+      ]);
+      currentenvironment.nvidiaCardAndNouveauRunning = results[0] && results[1];
+    } catch (_) {
+      // Leave the default (false). A failed probe must not keep the app from
+      // starting, and the flag only selects between two icon rendering paths.
+    }
   }
 
   /// Returns new list of found folder entries.
@@ -2074,7 +2151,9 @@ class Linux {
     return newEntries;
   }
 
-  static void getBrowserBookmarks(BuildContext context) async {
+  static Future<void> getBrowserBookmarks(BuildContext context) async {
+    // Resolved before the await — see [getAllFolderEntriesOfUser].
+    final String openLabel = AppLocalizations.of(context)!.openX;
     String outputString = await runPythonScript("get_bookmarks.py");
     List<String> lines = outputString.split("\n");
     List<ActionEntry> returnValue = [];
@@ -2083,8 +2162,7 @@ class Linux {
       if (elements.length == 2) {
         returnValue.add(ActionEntry(
             name: elements[0],
-            description:
-                "${AppLocalizations.of(context)!.openX} ${elements[1]}",
+            description: "$openLabel ${elements[1]}",
             action: "openwebsite:${elements[1]}",
             priority: -5.0));
       }

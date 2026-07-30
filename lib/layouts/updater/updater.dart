@@ -6,13 +6,22 @@ import 'package:linux_assistant/services/updater.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
 import 'package:linux_assistant/services/weekly_tasks.dart';
 
-class LinuxAssistantUpdatePage extends StatelessWidget {
+class LinuxAssistantUpdatePage extends StatefulWidget {
   const LinuxAssistantUpdatePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    Future<void> weeklyTasks = WeeklyTasks.doWeekleyTasks();
+  State<LinuxAssistantUpdatePage> createState() =>
+      _LinuxAssistantUpdatePageState();
+}
 
+class _LinuxAssistantUpdatePageState extends State<LinuxAssistantUpdatePage> {
+  /// Started once. As a `build()` local this re-fired the weekly check — which
+  /// includes a network request to api.github.com with a five second timeout —
+  /// on every rebuild of the startup screen.
+  late final Future<void> weeklyTasks = WeeklyTasks.doWeekleyTasks();
+
+  @override
+  Widget build(BuildContext context) {
     return FutureBuilder<void>(
       future: weeklyTasks,
       builder: (context, snapshot) {

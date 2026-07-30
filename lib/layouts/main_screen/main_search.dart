@@ -90,12 +90,29 @@ class _MainSearchState extends State<MainSearch> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    suggestionTimer ??= Timer.periodic(
+  void initState() {
+    super.initState();
+    // Started here rather than in `build()`, and cancelled in `dispose()`.
+    // Both timers used to outlive the widget: inside the hub the search
+    // section is kept alive in an IndexedStack, and every navigation back to
+    // the search screen created another instance with another orphaned timer.
+    suggestionTimer = Timer.periodic(
       const Duration(seconds: 5),
       ((timer) => _handleSuggestions()),
     );
+  }
 
+  @override
+  void dispose() {
+    suggestionTimer?.cancel();
+    searchOnStoppedTyping?.cancel();
+    searchBarController.dispose();
+    scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     var backgroundColor = Theme.of(context).cardColor;
 
     // Complete height of a search entry is 64 + 8 (padding)
@@ -118,7 +135,7 @@ class _MainSearchState extends State<MainSearch> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 SizedBox(width: 16),
-                                DiskSpace(),
+                                const DiskSpace(),
                                 SizedBox(width: 16),
                                 SystemStatus(),
                               ],
@@ -555,6 +572,9 @@ class _MainSearchState extends State<MainSearch> {
     _sortFoundEntries();
     _removeDuplicatedEntries();
 
+    if (!mounted) {
+      return;
+    }
     setState(() {});
   }
 
@@ -633,6 +653,12 @@ class _MainSearchState extends State<MainSearch> {
       return;
     }
 
+    // The package manager queries above can take seconds on a cold cache, which
+    // is more than enough time for the user to dismiss this screen.
+    if (!mounted) {
+      return;
+    }
+
     setState(() {
       _foundEntries.addAll(heavyEntries);
       _sortFoundEntries();
@@ -691,7 +717,9 @@ class _MainSearchState extends State<MainSearch> {
     hotKeyManager.register(
       down,
       keyDownHandler: (hotKey) {
-        if (selectedIndex + 1 < _foundEntries.length) {
+        // A stale instance can still receive this: the handlers are registered
+        // globally, not per widget.
+        if (mounted && selectedIndex + 1 < _foundEntries.length) {
           setState(() {
             selectedIndex += 1;
             selectedIndexInView += 1;
@@ -711,7 +739,7 @@ class _MainSearchState extends State<MainSearch> {
     hotKeyManager.register(
       up,
       keyDownHandler: (hotKey) {
-        if (selectedIndex - 1 >= 0) {
+        if (mounted && selectedIndex - 1 >= 0) {
           setState(() {
             selectedIndex -= 1;
             selectedIndexInView -= 1;

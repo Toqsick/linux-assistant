@@ -17,8 +17,18 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 version: 1.0.0+1
 
+# The declared floor was ">=2.17.6 <3.0.0", which the dependency graph has long
+# outgrown: pubspec.lock resolves Dart >=3.10 and intl 0.20.2 is itself a Dart
+# 3.3 package. The effect was not cosmetic — pub pinned the whole app to
+# language version 2.17, so Dart 3 features were rejected in code that had
+# every right to use them.
+#
+# The Flutter bound is what it is because `Color.withValues(alpha:)` is used in
+# the design tokens and the Hermes widgets; on an older Flutter that fails to
+# compile with a message that points nowhere near the cause.
 environment:
-  sdk: ">=2.17.6 <3.0.0"
+  sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.27.0"
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
