@@ -2,6 +2,23 @@
 
 A linux application which is a daily linux helper with powerful integrated search, routines checks and admninistrative tasks. The Project is built with flutter and python.
 
+## Install
+
+With a `.deb` at hand — from a release, from CI or from `build-deb.sh`:
+
+```bash
+bash install.sh                    # picks up the .deb next to the script
+bash install.sh path/to/pkg.deb    # or a specific one
+bash install.sh --purge            # additionally: fresh settings, no leftover shortcuts
+```
+
+The script looks for an older installation first — a `.deb`, a Flatpak, a
+binary someone copied onto the `PATH`, orphaned `.desktop` files — and clears
+out what `apt` cannot replace on its own. Run it as your normal user; it calls
+`sudo` where it needs to, so that settings and keyboard shortcuts end up in
+your account rather than root's. See [Uninstall](#uninstall) for doing it by
+hand.
+
 ## Requirements
 
 To build:
