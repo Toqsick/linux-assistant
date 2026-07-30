@@ -1,4 +1,6 @@
 
+import 'dart:io';
+
 import 'package:linux_assistant/helpers/command_helper.dart';
 
 class Uptime {
@@ -75,15 +77,17 @@ abstract class LinuxSystem {
 
   /// Returns the average load of the CPU of the last minute
   /// Values are between 0 and 1
+  ///
+  /// Read straight from procfs rather than through `cat`: this runs on every
+  /// poll tick, and forking a process to read a virtual file is the kind of
+  /// cost that only shows up as battery drain.
   static Future<double> getCpuAverageLoad() async {
-    // Run cat /proc/loadavg
-    var cmdResult =
-        await CommandHelper.runWithArguments("/usr/bin/cat", ["/proc/loadavg"]);
-    if (!cmdResult.success) {
-      print("Error: ${cmdResult.error}");
-    }
-    double load = double.parse(cmdResult.output.split(" ")[0]);
+    final double load = parseLoadAvg(await File("/proc/loadavg").readAsString());
     int cpuCount = await getCpuThreadCount();
     return load / cpuCount;
   }
+
+  /// The one-minute figure from the first column of `/proc/loadavg`.
+  static double parseLoadAvg(String content) =>
+      double.parse(content.trim().split(" ")[0]);
 }

@@ -1,9 +1,9 @@
 Package: linux-assistant
-Version: 0.6.2
-Depends: libkeybinder-3.0-0, wmctrl, wget, python3, mesa-utils, pkexec | policykit-1
+Version: 0.7.0
+Depends: libgtk-3-0, libkeybinder-3.0-0, wmctrl, wget, python3, python3-gi, gir1.2-gtk-3.0, python3-apt, mesa-utils, pkexec | policykit-1
 Maintainer: Jean28518
 Architecture: amd64
-Hompage: https://www.linux-assistant.org/
-Section: Utils
+Homepage: https://www.linux-assistant.org/
+Section: utils
 Description: Daily Linux Helper with integrated search
 Installed-Size: 54776

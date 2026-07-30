@@ -36,24 +36,42 @@ class LinuxAssistantUpdater {
   }
 
   /// example for [version] would be: "3.4.19"
+  ///
+  /// Tolerates shapes other than exactly `x.y.z`. This used to assert on the
+  /// component count and `int.parse` each part, so a release tagged `0.8` or
+  /// `v0.8.0-rc1` threw instead of simply reporting "no update".
   static bool isVersionGreaterThanCurrent(String version) {
-    List<String> currentVersionList =
-        CURRENT_LINUX_ASSISTANT_VERSION.split(".");
-    assert(currentVersionList.length == 3);
-    List<String> versionList = version.split(".");
-    assert(versionList.length == 3);
+    final List<int> current = _parseVersion(CURRENT_LINUX_ASSISTANT_VERSION);
+    final List<int> other = _parseVersion(version);
 
-    for (int i = 0; i < 3; i++) {
-      if (int.parse(versionList[i]) > int.parse(currentVersionList[i])) {
-        return true;
-      } else if (int.parse(versionList[i]) < int.parse(currentVersionList[i])) {
-        return false;
-      } else {
-        // This version index is equal. Look to the indizes after.
+    if (current.isEmpty || other.isEmpty) {
+      return false;
+    }
+
+    final int length = current.length > other.length ? current.length : other.length;
+    for (int i = 0; i < length; i++) {
+      final int a = i < other.length ? other[i] : 0;
+      final int b = i < current.length ? current[i] : 0;
+      if (a != b) {
+        return a > b;
       }
     }
     // If they are equal return false.
     return false;
+  }
+
+  /// Turns "v1.2.3", "1.2" or "1.2.3-rc1" into its numeric components.
+  /// Returns an empty list when nothing numeric can be read at all.
+  static List<int> _parseVersion(String version) {
+    final List<int> parts = [];
+    for (final String raw in version.trim().replaceFirst("v", "").split(".")) {
+      final match = RegExp(r"^\d+").firstMatch(raw.trim());
+      if (match == null) {
+        break;
+      }
+      parts.add(int.parse(match.group(0)!));
+    }
+    return parts;
   }
 
   /// Only adds commands to Linux.commandQueue.

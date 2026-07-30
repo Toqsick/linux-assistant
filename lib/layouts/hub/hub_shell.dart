@@ -11,9 +11,28 @@ import 'package:linux_assistant/main.dart';
 import 'package:linux_assistant/services/system_stats_service.dart';
 import 'package:linux_assistant/services/theme_controller.dart';
 import 'package:linux_assistant/widgets/hermes/hermes_nav_item.dart';
+import 'package:window_manager/window_manager.dart';
 
 /// The sections reachable from the sidebar.
 enum HubSection { dashboard, search, storage, health, security }
+
+/// Whether a section displays live system stats.
+///
+/// Sections that do not are told to the [SystemStatsService] so it can stop
+/// polling instead of collecting numbers nobody is looking at.
+bool _sectionUsesStats(HubSection section) {
+  switch (section) {
+    case HubSection.dashboard:
+    case HubSection.storage:
+    case HubSection.health:
+      return true;
+    case HubSection.search:
+      // The search screen carries the memory/disk status row.
+      return true;
+    case HubSection.security:
+      return false;
+  }
+}
 
 /// The persistent frame of the hub: sidebar, top bar and the active section.
 ///
@@ -34,7 +53,8 @@ class HubShell extends StatefulWidget {
   State<HubShell> createState() => _HubShellState();
 }
 
-class _HubShellState extends State<HubShell> {
+class _HubShellState extends State<HubShell>
+    with WindowListener, WidgetsBindingObserver {
   static const double _sidebarWidth = 260;
   static const double _railWidth = 56;
 
@@ -55,6 +75,13 @@ class _HubShellState extends State<HubShell> {
     // rather than minimizing the window.
     MainSearch.onDismiss = _returnToDashboard;
     HubShell.onSearchRequested = _focusSearch;
+    windowManager.addListener(this);
+    // Two independent signals for the same question, because neither is
+    // reliable alone on Linux: window_manager's minimize event needs a window
+    // manager that reports the state change, and the Flutter lifecycle state
+    // is not delivered by every desktop either.
+    WidgetsBinding.instance.addObserver(this);
+    SystemStatsService().setSectionActive(_sectionUsesStats(_section));
   }
 
   @override
@@ -65,25 +92,39 @@ class _HubShellState extends State<HubShell> {
     if (HubShell.onSearchRequested == _focusSearch) {
       HubShell.onSearchRequested = null;
     }
+    windowManager.removeListener(this);
+    WidgetsBinding.instance.removeObserver(this);
+    // Leave the service in the state a non-hub screen expects.
+    SystemStatsService().setSectionActive(true);
+    SystemStatsService().setWindowVisible(true);
     super.dispose();
   }
 
-  void _focusSearch() {
-    if (mounted) {
-      setState(() => _section = HubSection.search);
-    }
+  // Minimizing is the case that matters: the hub keeps every visited section
+  // alive, so nothing else would ever stop the three-second poll.
+  @override
+  void onWindowMinimize() => SystemStatsService().setWindowVisible(false);
+
+  @override
+  void onWindowRestore() => SystemStatsService().setWindowVisible(true);
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    SystemStatsService().setWindowVisible(
+      state == AppLifecycleState.resumed || state == AppLifecycleState.inactive,
+    );
   }
 
-  void _returnToDashboard() {
-    if (mounted) {
-      setState(() => _section = HubSection.dashboard);
-    }
-  }
+  void _focusSearch() => _select(HubSection.search);
+
+  void _returnToDashboard() => _select(HubSection.dashboard);
 
   void _select(HubSection section) {
-    if (_section != section) {
-      setState(() => _section = section);
+    if (!mounted || _section == section) {
+      return;
     }
+    setState(() => _section = section);
+    SystemStatsService().setSectionActive(_sectionUsesStats(section));
   }
 
   String _titleOf(BuildContext context, HubSection section) {
@@ -174,8 +215,9 @@ class _HubShellState extends State<HubShell> {
       index: visited.indexOf(_section),
       children: [
         for (final section in visited)
-          // TickerMode stops animations and the search field's timers in
-          // sections that are currently off screen.
+          // Stops animations in sections that are currently off screen. Note
+          // that this covers `Ticker`s only — a plain `Timer` keeps running,
+          // which is why the stats poller is gated explicitly in [_select].
           TickerMode(
             enabled: section == _section,
             child: _built[section]!,

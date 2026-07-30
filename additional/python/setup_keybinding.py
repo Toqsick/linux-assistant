@@ -161,14 +161,24 @@ def main():
     else:
         pass
     
-    if "cinnamon" in os.getenv("XDG_CURRENT_DESKTOP").lower():
+    # Read once and defensively: the variable is absent in a TTY and under
+    # pkexec, where `.lower()` on None raised AttributeError.
+    desktop = (os.getenv("XDG_CURRENT_DESKTOP") or "").lower()
+
+    # elif, not four separate ifs: XDG_CURRENT_DESKTOP is a colon separated
+    # list ("zorin:GNOME", "X-Cinnamon:GNOME"), so more than one token can
+    # match and the binding would be registered twice.
+    if "cinnamon" in desktop:
         add_linux_assistant_keybinding_cinnamon()
-    if "gnome" in os.getenv("XDG_CURRENT_DESKTOP").lower():
+    elif "gnome" in desktop:
         add_linux_assistant_keybinding_gnome()
-    if "xfce" in os.getenv("XDG_CURRENT_DESKTOP").lower():
+    elif "xfce" in desktop:
         add_linux_assistant_keybinding_xfce()
-    if "kde" in os.getenv("XDG_CURRENT_DESKTOP").lower():
+    elif "kde" in desktop:
         add_linux_assistant_keybinding_kde()
+    else:
+        print(f"No supported desktop found in XDG_CURRENT_DESKTOP='{desktop}', "
+              "no keyboard shortcut was registered.")
 
 if __name__ == "__main__":
     main()

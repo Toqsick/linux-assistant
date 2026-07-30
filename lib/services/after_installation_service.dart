@@ -55,7 +55,10 @@ class AfterInstallationService {
     Future? fChromium;
 
     if (Linux.currentenvironment.distribution == DISTROS.UBUNTU ||
-        Linux.currentenvironment.distribution == DISTROS.POPOS) {
+        Linux.currentenvironment.distribution == DISTROS.POPOS ||
+        // Zorin OS is Ubuntu based and ships the same transitional package, so
+        // the bare `chromium` name does not resolve there either.
+        Linux.currentenvironment.distribution == DISTROS.ZORINOS) {
       // Chromium for Ubuntu (snap):
       fChromium = applyApplicationActionIfNecessary(
           ["chromium-browser", "org.chromium.Chromium"], chromium);

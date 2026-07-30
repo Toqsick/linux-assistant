@@ -13,7 +13,11 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Pinned rather than ubuntu-latest: the produced binaries carry the glibc
+    # of whatever image builds them, so a silent move of `latest` to a newer
+    # Ubuntu would make the artifacts refuse to start on 24.04-based systems
+    # (Zorin OS 18, Linux Mint 22, Ubuntu 24.04 itself).
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v3
       - uses: subosito/flutter-action@v2

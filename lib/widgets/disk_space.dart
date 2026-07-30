@@ -8,14 +8,28 @@ import 'package:linux_assistant/widgets/single_bar_chart.dart';
 import 'package:linux_assistant/services/linux.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
 
-class DiskSpace extends StatelessWidget {
-  DiskSpace({Key? key}) : super(key: key);
+class DiskSpace extends StatefulWidget {
+  const DiskSpace({super.key});
 
+  @override
+  State<DiskSpace> createState() => _DiskSpaceState();
+}
+
+class _DiskSpaceState extends State<DiskSpace> {
   final ScrollController _scrollController = ScrollController();
+
+  /// Resolved once. This widget lives inside the search screen, which rebuilds
+  /// on every keystroke — as a `build()` local it forked `df` each time.
+  late final Future<List<DeviceInfo>> systemDevices = LinuxFilesystem.disks();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    Future<List<DeviceInfo>> systemDevices = LinuxFilesystem.disks();
     return FutureBuilder<List<DeviceInfo>>(
       future: systemDevices,
       builder: ((context, snapshot) {

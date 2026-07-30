@@ -4,12 +4,14 @@ A linux application which is a daily linux helper with powerful integrated searc
 
 ## Requirements
 
-```bash
-sudo apt install keybinder-3.0 
-sudo apt install libkeybinder-3.0-0 libkeybinder-3.0-dev # For debian 11, Ubuntu 22.04, ...
+To build:
 
-sudo apt install wmctrl
+```bash
+sudo apt install libkeybinder-3.0-0 libkeybinder-3.0-dev wmctrl
 ```
+
+To run an installed package, only the runtime libraries are needed — the `.deb`
+declares them, so `apt` pulls them in for you.
 
 ## Build
 
@@ -27,20 +29,49 @@ flutter build linux
 chmod +x additional/python/run_script.py
 cp -r additional build/linux/x64/release/bundle/
 cd build/linux/x64/release/bundle/
-./linux_assistant
+./linux-assistant
 
 # Option 2: Build .deb and install .deb package:
 bash ./build-deb.sh
-sudo dpkg --install linux-assistant.deb
+sudo apt install ./linux-assistant_*_amd64.deb
 
 # Option 3: Build .rpm package:
 bash ./build-rpm.sh
 
-# Option 3: Build Arch package
+# Option 4: Build Arch package
 # You can only do this on an arch based distro
 bash ./build-arch-pkg.sh
 # To Install:
 sudo pacman -U linux-assistant-*.pkg.tar.zst
+```
+
+Prefer `apt install ./…deb` over `dpkg -i`: `apt` resolves the declared
+dependencies, whereas `dpkg` leaves the package half configured if one is
+missing.
+
+## Uninstall
+
+```bash
+sudo apt remove linux-assistant
+```
+
+Two things no package manager knows about and that therefore survive:
+
+```bash
+# Settings, search history and caches
+rm -rf ~/.config/linux-assistant ~/.cache/linux-assistant
+```
+
+…and the keyboard shortcut, which is written into the desktop environment's own
+configuration. On GNOME based desktops (Ubuntu, Zorin OS, Fedora) it is a custom
+shortcut running `linux-assistant`; remove it under
+*Settings ▸ Keyboard ▸ Custom Shortcuts*. On KDE the entry lives in
+`~/.config/khotkeysrc`, on XFCE in the xfconf command bindings.
+
+If the app was installed as a Flatpak instead, it is removed separately:
+
+```bash
+flatpak uninstall io.github.jean28518.Linux-Assistant
 ```
 
 ## Run as flatpak
