@@ -190,8 +190,8 @@ enum MintYAccent {
   /// LMDE.
   lmde(MintYAccentPair(Color(0xff35a854), Color(0xff238246))),
 
-  /// Debian.
-  debian(MintYAccentPair(Color(0xffd0074e), Color(0xff2ab9a4))),
+  /// Debian. Secondary korrigiert via Design-Audit (war fälschlich #2AB9A4).
+  debian(MintYAccentPair(Color(0xffd0074e), Color(0xff4b0523))),
 
   /// openSUSE.
   opensuse(MintYAccentPair(Color(0xff73ba25), Color(0xff0f5f4b))),
