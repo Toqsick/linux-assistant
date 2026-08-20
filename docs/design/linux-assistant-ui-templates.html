@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linux Assistant – UI Templates (Mint-Y / Hermes Design System)</title>
+<style>
+  /* ══════════════ TOKENS (extrahiert aus mint_y.dart) ══════════════ */
+  :root {
+    --color-primary: #6DB443;
+    --color-secondary: #2AB9A4;
+    --color-canvas: #1F1F1F;
+    --color-surface: #2D2D2D;
+    --color-surface-hover: #383838;
+    --color-text: #FFFFFF;
+    --color-text-dim: #9D9D9D;
+    --status-success: #4CAF50;
+    --status-warning: #FF9800;
+    --status-danger: #F44336;
+    --chart-cpu: #4699DD;
+    --chart-ram: #C177F3;
+    --chart-disk: #8D8D8D;
+    --radius-sm: 7px;
+    --radius-md: 8px;
+    --radius-lg: 10px;
+    --radius-xl: 20px;
+    --space-1: 8px; --space-2: 10px; --space-3: 16px; --space-4: 32px;
+    --font-base: "Roboto", "Cantarell", "Ubuntu", system-ui, sans-serif;
+    --font-mono: "Courier", "Courier New", monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--color-canvas);
+    color: var(--color-text);
+    font-family: var(--font-base);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .template-label {
+    font-size: 12px; color: var(--color-text-dim);
+    text-transform: uppercase; letter-spacing: 1.5px;
+    padding: var(--space-3) var(--space-4) var(--space-1);
+  }
+
+  /* ══════════════ TYPOGRAFIE ══════════════ */
+  .heading-1 { font-size: 32px; font-weight: 500; }
+  .heading-2 { font-size: 24px; font-weight: 400; }
+  .heading-3 { font-size: 20px; font-weight: 400; }
+  .heading-4 { font-size: 16px; font-weight: 400; }
+  .mono      { font-family: var(--font-mono); }
+
+  /* ══════════════ BUTTONS (MintYButton) ══════════════ */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 12px 28px;
+    background: var(--color-primary);
+    color: #fff; font-size: 16px; font-family: var(--font-base);
+    border: none; border-radius: var(--radius-lg);
+    cursor: pointer; transition: filter .15s ease;
+  }
+  .btn:hover { filter: brightness(1.12); }
+  .btn--secondary { background: var(--color-secondary); }
+  .btn--ghost {
+    background: transparent;
+    border: 1px solid var(--color-primary);
+    color: var(--color-primary);
+  }
+  .btn--danger { background: var(--status-danger); }
+
+  /* ══════════════ CARDS (ActionEntryCard / HermesCard) ══════════════ */
+  .card {
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3);
+    transition: background .15s ease;
+  }
+  .card:hover { background: var(--color-surface-hover); }
+  .card--selected { outline: 2px solid var(--color-primary); }
+  .card-hero {
+    background: #000; border-radius: var(--radius-xl);
+    padding: var(--space-3);
+  }
+
+  /* ══════════════ BADGES & CHIPS ══════════════ */
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: var(--radius-md);
+    font-size: 12px; font-weight: 500;
+  }
+  .badge--success { background: rgba(76,175,80,.15); color: var(--status-success); }
+  .badge--warning { background: rgba(255,152,0,.15); color: var(--status-warning); }
+  .badge--danger  { background: rgba(244,67,54,.15); color: var(--status-danger); }
+  .badge--accent  { background: rgba(109,180,67,.15); color: var(--color-primary); }
+  .halo-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 8px 2px currentColor;
+    display: inline-block;
+  }
+
+  /* ══════════════ PROGRESS / CHARTS ══════════════ */
+  .progress {
+    height: 15px; border-radius: var(--radius-sm);
+    background: #3a3a3a; overflow: hidden;
+  }
+  .progress__fill { height: 100%; border-radius: var(--radius-sm); }
+  .progress--mini { height: 5px; border-radius: 2px; }
+  .progress--mini .progress__fill { border-radius: 2px; }
+
+  /* ══════════════ MESSAGES ══════════════ */
+  .message { display: flex; align-items: center; gap: var(--space-1); padding: var(--space-2) 0; }
+  .message__icon { font-size: 32px; line-height: 1; }
+  .message--success .message__icon { color: var(--status-success); }
+  .message--warning .message__icon { color: var(--status-warning); }
+
+  /* ══════════════ NAV (HermesNavItem) ══════════════ */
+  .nav {
+    display: flex; flex-direction: column; gap: 4px;
+    background: var(--color-surface); border-radius: var(--radius-lg);
+    padding: var(--space-1); width: 260px;
+  }
+  .nav__item {
+    display: flex; align-items: center; gap: var(--space-2);
+    padding: 10px 14px; border-radius: var(--radius-md);
+    color: var(--color-text-dim); text-decoration: none;
+    transition: all .15s ease; cursor: pointer;
+  }
+  .nav__item:hover { background: var(--color-surface-hover); color: var(--color-text); }
+  .nav__item--active {
+    background: rgba(109,180,67,.12); color: var(--color-primary);
+    border-left: 3px solid var(--color-primary);
+  }
+
+  /* ══════════════ STAT TILE (HermesStatTile) ══════════════ */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-3); }
+  .stat-tile {
+    background: var(--color-surface); border-radius: var(--radius-lg);
+    padding: var(--space-3);
+  }
+  .stat-tile__label { font-size: 12px; color: var(--color-text-dim); text-transform: uppercase; letter-spacing: 1px; }
+  .stat-tile__value { font-size: 28px; font-weight: 500; margin: 4px 0; }
+  .stat-tile__spark { display: flex; align-items: flex-end; gap: 2px; height: 32px; }
+  .stat-tile__spark span { flex: 1; border-radius: 2px 2px 0 0; }
+
+  /* ══════════════ TERMINAL (RunCommandQueue) ══════════════ */
+  .terminal {
+    background: #000; border-radius: var(--radius-lg);
+    padding: var(--space-3); font-family: var(--font-mono);
+    font-size: 13px; color: #fff; overflow-x: auto;
+    user-select: text; white-space: pre;
+  }
+  .terminal .ok   { color: var(--status-success); }
+  .terminal .warn { color: var(--status-warning); }
+  .terminal .cmd  { color: var(--color-secondary); }
+
+  /* ══════════════ COPY-COMMAND (HermesCopyCommand) ══════════════ */
+  .copy-cmd {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #000; border: 1px solid #333; border-radius: var(--radius-md);
+    padding: 10px 14px; font-family: var(--font-mono); font-size: 13px;
+  }
+  .copy-cmd button {
+    background: none; border: none; color: var(--color-primary);
+    cursor: pointer; font-size: 13px;
+  }
+
+  /* ══════════════ FORM ELEMENTS ══════════════ */
+  .input {
+    width: 100%; padding: 12px 14px;
+    background: var(--color-canvas); color: var(--color-text);
+    border: 1px solid #444; border-radius: var(--radius-md);
+    font-family: var(--font-base); font-size: 14px;
+  }
+  .input:focus { outline: 2px solid var(--color-primary); border-color: transparent; }
+  ::selection { background: var(--color-primary); }
+
+  /* ══════════════ LAYOUT-SHELL ══════════════ */
+  .shell { display: flex; min-height: 60vh; margin: var(--space-4); gap: var(--space-4); }
+  .shell__main { flex: 1; display: flex; flex-direction: column; }
+  .shell__content {
+    flex: 1; background: var(--color-surface);
+    border-radius: var(--radius-xl); padding: var(--space-4);
+  }
+  .shell__bottombar {
+    display: flex; justify-content: center; gap: var(--space-2);
+    padding: var(--space-3) 0;
+  }
+  .demo-section { margin-bottom: var(--space-4); }
+  .row { display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════ TEMPLATE 1: APP-SHELL ════════════════════ -->
+<div class="template-label">Template 1 · App-Shell (1280×720, Bottom-Bar)</div>
+<div class="shell">
+  <nav class="nav">
+    <a class="nav__item nav__item--active"><span class="halo-dot"></span> Übersicht</a>
+    <a class="nav__item">🖥️ System-Health</a>
+    <a class="nav__item">🧹 Disk Cleaner</a>
+    <a class="nav__item">🛡️ Security Check</a>
+    <a class="nav__item">⚡ Power Mode</a>
+    <a class="nav__item">⚙️ Einstellungen</a>
+  </nav>
+  <main class="shell__main">
+    <div class="shell__content">
+      <h1 class="heading-1">Willkommen zurück</h1>
+      <p style="color:var(--color-text-dim); margin-top:8px;">Dein System ist aktuell. 3 Empfehlungen verfügbar.</p>
+      <div class="stat-grid" style="margin-top:24px;">
+        <div class="stat-tile">
+          <div class="stat-tile__label">CPU</div>
+          <div class="stat-tile__value" style="color:var(--chart-cpu);">23 %</div>
+          <div class="stat-tile__spark">
+            <span style="height:30%;background:var(--chart-cpu);"></span><span style="height:45%;background:var(--chart-cpu);"></span><span style="height:25%;background:var(--chart-cpu);"></span><span style="height:60%;background:var(--chart-cpu);"></span><span style="height:23%;background:var(--chart-cpu);"></span>
+          </div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-tile__label">RAM</div>
+          <div class="stat-tile__value" style="color:var(--chart-ram);">6.2 / 16 GB</div>
+          <div class="stat-tile__spark">
+            <span style="height:40%;background:var(--chart-ram);"></span><span style="height:42%;background:var(--chart-ram);"></span><span style="height:39%;background:var(--chart-ram);"></span><span style="height:44%;background:var(--chart-ram);"></span><span style="height:39%;background:var(--chart-ram);"></span>
+          </div>
+        </div>
+        <div class="stat-tile">
+          <div class="stat-tile__label">Disk /</div>
+          <div class="stat-tile__value" style="color:var(--status-danger);">91 %</div>
+          <div class="progress" style="margin-top:12px;"><div class="progress__fill" style="width:91%;background:var(--status-danger);"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="shell__bottombar">
+      <button class="btn btn--ghost">Zurück</button>
+      <button class="btn">Weiter</button>
+    </div>
+  </main>
+</div>
+
+<!-- ════════════════════ TEMPLATE 2: BUTTONS ════════════════════ -->
+<div class="template-label">Template 2 · Buttons (MintYButton)</div>
+<div class="demo-section" style="padding: 0 var(--space-4);">
+  <div class="row">
+    <button class="btn">Primär</button>
+    <button class="btn btn--secondary">Sekundär</button>
+    <button class="btn btn--ghost">Ghost</button>
+    <button class="btn btn--danger">Löschen</button>
+    <button class="btn" disabled style="opacity:.4;cursor:not-allowed;">Deaktiviert</button>
+  </div>
+</div>
+
+<!-- ════════════════════ TEMPLATE 3: CARDS ════════════════════ -->
+<div class="template-label">Template 3 · Cards (ActionEntryCard / Hero)</div>
+<div class="demo-section" style="padding: 0 var(--space-4);">
+  <div class="row" style="align-items:stretch;">
+    <div class="card" style="flex:1;min-width:220px;">
+      <h3 class="heading-4">🔄 System aktualisieren</h3>
+      <p style="color:var(--color-text-dim);font-size:13px;margin-top:4px;">Alle Pakete über den Paketmanager aktualisieren.</p>
+    </div>
+    <div class="card card--selected" style="flex:1;min-width:220px;">
+      <h3 class="heading-4">🧹 Speicher bereinigen</h3>
+      <p style="color:var(--color-text-dim);font-size:13px;margin-top:4px;">Ausgewählt – 2,4 GB können freigegeben werden.</p>
+    </div>
+    <div class="card-hero" style="flex:1;min-width:220px;">
+      <h3 class="heading-4">🛡️ Security Check</h3>
+      <p style="color:var(--color-text-dim);font-size:13px;margin-top:4px;">Hero-Card (Radius 20, schwarz).</p>
+      <span class="badge badge--success" style="margin-top:10px;"><span class="halo-dot"></span> Geschützt</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ TEMPLATE 4: BADGES & MESSAGES ════════════════════ -->
+<div class="template-label">Template 4 · Badges & Status-Messages</div>
+<div class="demo-section" style="padding: 0 var(--space-4);">
+  <div class="row">
+    <span class="badge badge--success"><span class="halo-dot"></span> Erfolgreich</span>
+    <span class="badge badge--warning"><span class="halo-dot"></span> Warnung</span>
+    <span class="badge badge--danger"><span class="halo-dot"></span> Kritisch</span>
+    <span class="badge badge--accent"><span class="halo-dot"></span> Empfohlen</span>
+  </div>
+  <div class="message message--success"><span class="message__icon">✔</span><span>Firewall ist aktiv und korrekt konfiguriert.</span></div>
+  <div class="message message--warning">
+    <span class="message__icon">⚠</span><span>Automatische Updates sind deaktiviert.</span>
+    <button class="btn" style="padding:6px 16px;font-size:13px;margin-left:auto;">Fix</button>
+  </div>
+</div>
+
+<!-- ════════════════════ TEMPLATE 5: TERMINAL & COPY-COMMAND ════════════════════ -->
+<div class="template-label">Template 5 · Terminal & Copy-Command</div>
+<div class="demo-section" style="padding: 0 var(--space-4);">
+  <div class="terminal">$ sudo apt update && sudo apt full-upgrade -y
+<span class="ok">✔ 42 Pakete aktualisiert</span>
+<span class="warn">⚠ Kernel-Update: Neustart erforderlich</span>
+<span class="cmd">$ _</span></div>
+  <div class="copy-cmd" style="margin-top:12px;">
+    <span>sudo apt install timeshift</span>
+    <button onclick="navigator.clipboard.writeText('sudo apt install timeshift')">⧉ Kopieren</button>
+  </div>
+</div>
+
+<!-- ════════════════════ TEMPLATE 6: FORM ════════════════════ -->
+<div class="template-label">Template 6 · Formulare</div>
+<div class="demo-section" style="padding: 0 var(--space-4); max-width: 480px;">
+  <label class="heading-4" style="display:block;margin-bottom:8px;">Hostname</label>
+  <input class="input" value="toqsick-zorin" spellcheck="false">
+  <div style="margin-top:16px;" class="row">
+    <button class="btn">Speichern</button>
+    <button class="btn btn--ghost">Abbrechen</button>
+  </div>
+</div>
+
+<!-- ════════════════════ TEMPLATE 7: DISTRO-ACCENT SWITCHER ════════════════════ -->
+<div class="template-label">Template 7 · Distro-Adaptive Akzente (JS-Switch)</div>
+<div class="demo-section" style="padding: 0 var(--space-4) var(--space-4);">
+  <div class="row" id="distro-switcher"></div>
+  <div class="card" style="margin-top:16px;max-width:420px;">
+    <h3 class="heading-4">Akzent-Vorschau</h3>
+    <div class="progress" style="margin-top:12px;"><div class="progress__fill" id="accent-bar" style="width:65%;background:var(--color-primary);"></div></div>
+    <button class="btn" id="accent-btn" style="margin-top:16px;">Aktion</button>
+  </div>
+</div>
+
+<script>
+  const distros = {
+    "Mint":      ["#6DB443", "#2AB9A4"],
+    "LMDE":      ["#35A854", "#238246"],
+    "Debian":    ["#D0074E", "#2AB9A4"],
+    "openSUSE":  ["#73BA25", "#0F5F4B"],
+    "KDE Neon":  ["#236896", "#18A087"],
+    "Ubuntu":    ["#E95420", "#77216F"],
+    "Zorin":     ["#15A6CF", "#0C7BA6"]
+  };
+  const sw = document.getElementById('distro-switcher');
+  Object.entries(distros).forEach(([name, [p]]) => {
+    const b = document.createElement('button');
+    b.className = 'btn btn--ghost'; b.textContent = name;
+    b.style.borderColor = p; b.style.color = p;
+    b.onclick = () => {
+      document.documentElement.style.setProperty('--color-primary', p);
+      document.getElementById('accent-bar').style.background = p;
+      document.getElementById('accent-btn').style.background = p;
+    };
+    sw.appendChild(b);
+  });
+</script>
+</body>
+</html>
