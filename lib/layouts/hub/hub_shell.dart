@@ -7,6 +7,7 @@ import 'package:linux_assistant/layouts/linux_health/overview.dart';
 import 'package:linux_assistant/layouts/main_screen/main_search.dart';
 import 'package:linux_assistant/layouts/security_check/overview.dart';
 import 'package:linux_assistant/layouts/settings/settings_start.dart';
+import 'package:linux_assistant/layouts/tools/file_manager.dart';
 import 'package:linux_assistant/layouts/tools/quick_notes.dart';
 import 'package:linux_assistant/main.dart';
 import 'package:linux_assistant/services/app_launcher.dart';
@@ -22,10 +23,10 @@ enum HubSection { dashboard, search, storage, health, security }
 ///
 /// Two kinds live here: [HubTool.browser] fires a detached process launch and
 /// never changes the active section, while screen-based tools
-/// ([HubTool.quickNotes]; file manager and system monitor follow with E3/E4)
-/// render inside the hub frame like a section – the frame then tracks them in
-/// [_screenTool].
-enum HubTool { browser, quickNotes }
+/// ([HubTool.quickNotes], [HubTool.fileManager]; the system monitor follows
+/// with E3) render inside the hub frame like a section – the frame then
+/// tracks them in [_screenTool].
+enum HubTool { browser, quickNotes, fileManager }
 
 /// Whether a section displays live system stats.
 ///
@@ -225,6 +226,8 @@ class _HubShellState extends State<HubShell>
         return Icons.public;
       case HubTool.quickNotes:
         return Icons.edit_note;
+      case HubTool.fileManager:
+        return Icons.folder_open;
     }
   }
 
@@ -234,6 +237,8 @@ class _HubShellState extends State<HubShell>
         return _tr(context, de: 'Browser', en: 'Browser');
       case HubTool.quickNotes:
         return _tr(context, de: 'Quick Notes', en: 'Quick Notes');
+      case HubTool.fileManager:
+        return _tr(context, de: 'Dateimanager', en: 'File manager');
     }
   }
 
@@ -273,6 +278,8 @@ class _HubShellState extends State<HubShell>
       switch (key) {
         case HubTool.quickNotes:
           return const QuickNotesPage();
+        case HubTool.fileManager:
+          return const FileManagerPage();
         case HubTool.browser:
           // Never on screen: the browser tool launches an external process
           // and is never assigned as the active content key.
@@ -364,8 +371,8 @@ class _HubShellState extends State<HubShell>
                   ),
                 // Werkzeuge-Sektion (Admin-Hub, Spec: docs/design/feature-spec-admin-hub.md).
                 // Browser startet detached (kein Sectionswechsel); Quick Notes
-                // rendert im Hub-Frame (Screen-Tool). E3/E4 (Dateimanager,
-                // Systemmonitor) werden hier als weitere HubTool-Einträge
+                // und Dateimanager rendern im Hub-Frame (Screen-Tools). E3
+                // (Systemmonitor) wird hier als weiterer HubTool-Eintrag
                 // ergänzt.
                 if (!collapsed) _sectionLabel(context, t),
                 for (final tool in HubTool.values)
@@ -405,6 +412,9 @@ class _HubShellState extends State<HubShell>
         break;
       case HubTool.quickNotes:
         _selectTool(HubTool.quickNotes);
+        break;
+      case HubTool.fileManager:
+        _selectTool(HubTool.fileManager);
         break;
     }
   }
