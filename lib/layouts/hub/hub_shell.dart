@@ -8,6 +8,7 @@ import 'package:linux_assistant/layouts/main_screen/main_search.dart';
 import 'package:linux_assistant/layouts/security_check/overview.dart';
 import 'package:linux_assistant/layouts/settings/settings_start.dart';
 import 'package:linux_assistant/main.dart';
+import 'package:linux_assistant/services/app_launcher.dart';
 import 'package:linux_assistant/services/system_stats_service.dart';
 import 'package:linux_assistant/services/theme_controller.dart';
 import 'package:linux_assistant/widgets/hermes/hermes_nav_item.dart';
@@ -15,6 +16,15 @@ import 'package:window_manager/window_manager.dart';
 
 /// The sections reachable from the sidebar.
 enum HubSection { dashboard, search, storage, health, security }
+
+/// Quick-access tools in the sidebar's "Werkzeuge" section.
+///
+/// Unlike [HubSection], tools are not screens swapped into the hub frame:
+/// [HubTool.browser] fires a detached process launch and never changes the
+/// active section. Screen-based tools (notes, file manager, system monitor –
+/// Admin-Hub Spec E2–E4) may either stay here with their own route handling
+/// or be promoted to [HubSection] once their screens land.
+enum HubTool { browser }
 
 /// Whether a section displays live system stats.
 ///
@@ -127,6 +137,36 @@ class _HubShellState extends State<HubShell>
     SystemStatsService().setSectionActive(_sectionUsesStats(section));
   }
 
+  /// Starts the configured (or detected) browser as a detached process.
+  ///
+  /// Feedback mirrors the [BrowserLaunchResult]: silent on preferred launch,
+  /// informational snackbar on the xdg-open fallback, error snackbar when no
+  /// browser could be found or started at all.
+  Future<void> _launchBrowser() async {
+    final result = await AppLauncher.launchBrowser();
+    if (!mounted) return;
+    switch (result) {
+      case BrowserLaunchResult.launchedPreferred:
+        break; // Nothing to report – the browser window is the feedback.
+      case BrowserLaunchResult.launchedFallback:
+        _showSnack(_tr(context,
+            de: 'Brave nicht gefunden – Standard-Browser geöffnet.',
+            en: 'Brave not found – opened the default browser.'));
+        break;
+      case BrowserLaunchResult.failed:
+        _showSnack(_tr(context,
+            de: 'Kein Browser gefunden.',
+            en: 'No browser found.'));
+        break;
+    }
+  }
+
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
   String _titleOf(BuildContext context, HubSection section) {
     final l10n = AppLocalizations.of(context)!;
     switch (section) {
@@ -156,6 +196,30 @@ class _HubShellState extends State<HubShell>
       case HubSection.security:
         return Icons.shield_outlined;
     }
+  }
+
+  IconData _iconOfTool(HubTool tool) {
+    switch (tool) {
+      case HubTool.browser:
+        return Icons.public;
+    }
+  }
+
+  String _titleOfTool(BuildContext context, HubTool tool) {
+    switch (tool) {
+      case HubTool.browser:
+        return _tr(context, de: 'Browser', en: 'Browser');
+    }
+  }
+
+  /// Minimal de/en lookup for the Werkzeuge section.
+  ///
+  /// TODO(l10n): Move these strings into the .arb files
+  /// (`tools`, `browser`, `quickNotes`, `fileManager`, `systemMonitor`) and
+  /// regenerate with `flutter gen-l10n`. The .arb files are ~40 KB each and
+  /// were not editable via API at implementation time.
+  static String _tr(BuildContext context, {required String de, required String en}) {
+    return Localizations.localeOf(context).languageCode == 'de' ? de : en;
   }
 
   Widget _buildSection(HubSection section) {
@@ -258,6 +322,19 @@ class _HubShellState extends State<HubShell>
                     collapsed: collapsed,
                     onTap: () => _select(section),
                   ),
+                // Werkzeuge-Sektion (Admin-Hub, Spec: docs/design/feature-spec-admin-hub.md).
+                // Browser startet detached (kein Sectionswechsel); E2–E4
+                // (Quick Notes, Dateimanager, Systemmonitor) werden hier als
+                // weitere HubTool-Einträge bzw. Routen ergänzt.
+                if (!collapsed) _sectionLabel(context, t),
+                for (final tool in HubTool.values)
+                  HermesNavItem(
+                    icon: _iconOfTool(tool),
+                    label: _titleOfTool(context, tool),
+                    selected: false,
+                    collapsed: collapsed,
+                    onTap: () => _onToolTap(tool),
+                  ),
               ],
             ),
           ),
@@ -276,6 +353,36 @@ class _HubShellState extends State<HubShell>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _onToolTap(HubTool tool) {
+    switch (tool) {
+      case HubTool.browser:
+        _launchBrowser();
+        break;
+    }
+  }
+
+  /// Section header in the style of the storage screen's
+  /// "EINGEBUNDENE DATENTRÄGER": small, muted, uppercase, letter-spaced.
+  Widget _sectionLabel(BuildContext context, HermesTokens t) {
+    return Padding(
+      padding: const EdgeInsets.only(
+        left: HermesTokens.space2,
+        right: HermesTokens.space2,
+        top: HermesTokens.space3,
+        bottom: HermesTokens.space1,
+      ),
+      child: Text(
+        _tr(context, de: 'WERKZEUGE', en: 'TOOLS'),
+        style: TextStyle(
+          color: t.muted,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 1.2,
+        ),
       ),
     );
   }
