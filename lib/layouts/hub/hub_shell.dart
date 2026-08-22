@@ -7,6 +7,7 @@ import 'package:linux_assistant/layouts/linux_health/overview.dart';
 import 'package:linux_assistant/layouts/main_screen/main_search.dart';
 import 'package:linux_assistant/layouts/security_check/overview.dart';
 import 'package:linux_assistant/layouts/settings/settings_start.dart';
+import 'package:linux_assistant/layouts/tools/quick_notes.dart';
 import 'package:linux_assistant/main.dart';
 import 'package:linux_assistant/services/app_launcher.dart';
 import 'package:linux_assistant/services/system_stats_service.dart';
@@ -19,12 +20,12 @@ enum HubSection { dashboard, search, storage, health, security }
 
 /// Quick-access tools in the sidebar's "Werkzeuge" section.
 ///
-/// Unlike [HubSection], tools are not screens swapped into the hub frame:
-/// [HubTool.browser] fires a detached process launch and never changes the
-/// active section. Screen-based tools (notes, file manager, system monitor –
-/// Admin-Hub Spec E2–E4) may either stay here with their own route handling
-/// or be promoted to [HubSection] once their screens land.
-enum HubTool { browser }
+/// Two kinds live here: [HubTool.browser] fires a detached process launch and
+/// never changes the active section, while screen-based tools
+/// ([HubTool.quickNotes]; file manager and system monitor follow with E3/E4)
+/// render inside the hub frame like a section – the frame then tracks them in
+/// [_screenTool].
+enum HubTool { browser, quickNotes }
 
 /// Whether a section displays live system stats.
 ///
@@ -73,10 +74,15 @@ class _HubShellState extends State<HubShell>
 
   late HubSection _section = widget.initialSection;
 
-  /// Sections are created on first visit and then kept alive. Building them all
-  /// up front would start every section's polling and let the search field
-  /// steal focus while the dashboard is on screen.
-  final Map<HubSection, Widget> _built = {};
+  /// Set while a screen-based tool (e.g. Quick Notes) occupies the content
+  /// area. The last visited [_section] is kept so leaving the tool returns
+  /// exactly where the user was.
+  HubTool? _screenTool;
+
+  /// Sections and screen tools are created on first visit and then kept
+  /// alive. Building them all up front would start every section's polling
+  /// and let the search field steal focus while the dashboard is on screen.
+  final Map<Object, Widget> _built = {};
 
   @override
   void initState() {
@@ -130,11 +136,26 @@ class _HubShellState extends State<HubShell>
   void _returnToDashboard() => _select(HubSection.dashboard);
 
   void _select(HubSection section) {
-    if (!mounted || _section == section) {
+    if (!mounted || (_section == section && _screenTool == null)) {
       return;
     }
-    setState(() => _section = section);
+    setState(() {
+      _section = section;
+      _screenTool = null;
+    });
     SystemStatsService().setSectionActive(_sectionUsesStats(section));
+  }
+
+  /// Hands the content area to a screen-based tool. The underlying section
+  /// stays selected underneath, so returning to it loses no state.
+  void _selectTool(HubTool tool) {
+    if (!mounted || _screenTool == tool) {
+      return;
+    }
+    setState(() => _screenTool = tool);
+    // Tool screens show no live stats – stop the poll like a stats-less
+    // section would.
+    SystemStatsService().setSectionActive(false);
   }
 
   /// Starts the configured (or detected) browser as a detached process.
@@ -202,6 +223,8 @@ class _HubShellState extends State<HubShell>
     switch (tool) {
       case HubTool.browser:
         return Icons.public;
+      case HubTool.quickNotes:
+        return Icons.edit_note;
     }
   }
 
@@ -209,6 +232,8 @@ class _HubShellState extends State<HubShell>
     switch (tool) {
       case HubTool.browser:
         return _tr(context, de: 'Browser', en: 'Browser');
+      case HubTool.quickNotes:
+        return _tr(context, de: 'Quick Notes', en: 'Quick Notes');
     }
   }
 
@@ -243,6 +268,40 @@ class _HubShellState extends State<HubShell>
     }
   }
 
+  Widget _contentFor(Object key) {
+    if (key is HubTool) {
+      switch (key) {
+        case HubTool.quickNotes:
+          return const QuickNotesPage();
+        case HubTool.browser:
+          // Never on screen: the browser tool launches an external process
+          // and is never assigned as the active content key.
+          return const SizedBox.shrink();
+      }
+    }
+    return _buildSection(key as HubSection);
+  }
+
+  Widget _content() {
+    final Object active = _screenTool ?? _section;
+    _built.putIfAbsent(active, () => _contentFor(active));
+    final visited = _built.keys.toList();
+
+    return IndexedStack(
+      index: visited.indexOf(active),
+      children: [
+        for (final key in visited)
+          // Stops animations in screens that are currently off screen. Note
+          // that this covers `Ticker`s only — a plain `Timer` keeps running,
+          // which is why the stats poller is gated explicitly in [_select].
+          TickerMode(
+            enabled: key == active,
+            child: _built[key]!,
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = HermesTokens.of(context);
@@ -268,25 +327,6 @@ class _HubShellState extends State<HubShell>
           ),
         );
       },
-    );
-  }
-
-  Widget _content() {
-    _built.putIfAbsent(_section, () => _buildSection(_section));
-    final visited = _built.keys.toList();
-
-    return IndexedStack(
-      index: visited.indexOf(_section),
-      children: [
-        for (final section in visited)
-          // Stops animations in sections that are currently off screen. Note
-          // that this covers `Ticker`s only — a plain `Timer` keeps running,
-          // which is why the stats poller is gated explicitly in [_select].
-          TickerMode(
-            enabled: section == _section,
-            child: _built[section]!,
-          ),
-      ],
     );
   }
 
@@ -318,20 +358,21 @@ class _HubShellState extends State<HubShell>
                   HermesNavItem(
                     icon: _iconOf(section),
                     label: _titleOf(context, section),
-                    selected: _section == section,
+                    selected: _screenTool == null && _section == section,
                     collapsed: collapsed,
                     onTap: () => _select(section),
                   ),
                 // Werkzeuge-Sektion (Admin-Hub, Spec: docs/design/feature-spec-admin-hub.md).
-                // Browser startet detached (kein Sectionswechsel); E2–E4
-                // (Quick Notes, Dateimanager, Systemmonitor) werden hier als
-                // weitere HubTool-Einträge bzw. Routen ergänzt.
+                // Browser startet detached (kein Sectionswechsel); Quick Notes
+                // rendert im Hub-Frame (Screen-Tool). E3/E4 (Dateimanager,
+                // Systemmonitor) werden hier als weitere HubTool-Einträge
+                // ergänzt.
                 if (!collapsed) _sectionLabel(context, t),
                 for (final tool in HubTool.values)
                   HermesNavItem(
                     icon: _iconOfTool(tool),
                     label: _titleOfTool(context, tool),
-                    selected: false,
+                    selected: _screenTool == tool,
                     collapsed: collapsed,
                     onTap: () => _onToolTap(tool),
                   ),
@@ -361,6 +402,9 @@ class _HubShellState extends State<HubShell>
     switch (tool) {
       case HubTool.browser:
         _launchBrowser();
+        break;
+      case HubTool.quickNotes:
+        _selectTool(HubTool.quickNotes);
         break;
     }
   }
@@ -461,7 +505,9 @@ class _HubShellState extends State<HubShell>
       child: Row(
         children: [
           Text(
-            _titleOf(context, _section),
+            _screenTool != null
+                ? _titleOfTool(context, _screenTool!)
+                : _titleOf(context, _section),
             style: TextStyle(
               color: t.strong,
               fontSize: 15,
