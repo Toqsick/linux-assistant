@@ -9,6 +9,7 @@ import 'package:linux_assistant/layouts/security_check/overview.dart';
 import 'package:linux_assistant/layouts/settings/settings_start.dart';
 import 'package:linux_assistant/layouts/tools/file_manager.dart';
 import 'package:linux_assistant/layouts/tools/quick_notes.dart';
+import 'package:linux_assistant/layouts/tools/system_monitor.dart';
 import 'package:linux_assistant/main.dart';
 import 'package:linux_assistant/services/app_launcher.dart';
 import 'package:linux_assistant/services/system_stats_service.dart';
@@ -23,10 +24,10 @@ enum HubSection { dashboard, search, storage, health, security }
 ///
 /// Two kinds live here: [HubTool.browser] fires a detached process launch and
 /// never changes the active section, while screen-based tools
-/// ([HubTool.quickNotes], [HubTool.fileManager]; the system monitor follows
-/// with E3) render inside the hub frame like a section – the frame then
-/// tracks them in [_screenTool].
-enum HubTool { browser, quickNotes, fileManager }
+/// ([HubTool.quickNotes], [HubTool.fileManager], [HubTool.systemMonitor])
+/// render inside the hub frame like a section – the frame then tracks them in
+/// [_screenTool].
+enum HubTool { browser, quickNotes, fileManager, systemMonitor }
 
 /// Whether a section displays live system stats.
 ///
@@ -149,6 +150,9 @@ class _HubShellState extends State<HubShell>
 
   /// Hands the content area to a screen-based tool. The underlying section
   /// stays selected underneath, so returning to it loses no state.
+  ///
+  /// Note: the system monitor shows live stats, but from its own 1-second
+  /// sampler – the shared 3-second poll stays off for tool screens.
   void _selectTool(HubTool tool) {
     if (!mounted || _screenTool == tool) {
       return;
@@ -228,6 +232,8 @@ class _HubShellState extends State<HubShell>
         return Icons.edit_note;
       case HubTool.fileManager:
         return Icons.folder_open;
+      case HubTool.systemMonitor:
+        return Icons.monitor_heart;
     }
   }
 
@@ -239,6 +245,8 @@ class _HubShellState extends State<HubShell>
         return _tr(context, de: 'Quick Notes', en: 'Quick Notes');
       case HubTool.fileManager:
         return _tr(context, de: 'Dateimanager', en: 'File manager');
+      case HubTool.systemMonitor:
+        return _tr(context, de: 'Systemmonitor', en: 'System monitor');
     }
   }
 
@@ -280,6 +288,8 @@ class _HubShellState extends State<HubShell>
           return const QuickNotesPage();
         case HubTool.fileManager:
           return const FileManagerPage();
+        case HubTool.systemMonitor:
+          return const SystemMonitorPage();
         case HubTool.browser:
           // Never on screen: the browser tool launches an external process
           // and is never assigned as the active content key.
@@ -298,9 +308,9 @@ class _HubShellState extends State<HubShell>
       index: visited.indexOf(active),
       children: [
         for (final key in visited)
-          // Stops animations in screens that are currently off screen. Note
-          // that this covers `Ticker`s only — a plain `Timer` keeps running,
-          // which is why the stats poller is gated explicitly in [_select].
+          // Stops animations in screens that are currently off screen. The
+          // system monitor relies on this: its sampler is Ticker-driven, so
+          // leaving the tool stops its 1-second polling for free.
           TickerMode(
             enabled: key == active,
             child: _built[key]!,
@@ -370,10 +380,9 @@ class _HubShellState extends State<HubShell>
                     onTap: () => _select(section),
                   ),
                 // Werkzeuge-Sektion (Admin-Hub, Spec: docs/design/feature-spec-admin-hub.md).
-                // Browser startet detached (kein Sectionswechsel); Quick Notes
-                // und Dateimanager rendern im Hub-Frame (Screen-Tools). E3
-                // (Systemmonitor) wird hier als weiterer HubTool-Eintrag
-                // ergänzt.
+                // Browser startet detached (kein Sectionswechsel); Quick Notes,
+                // Dateimanager und Systemmonitor rendern im Hub-Frame
+                // (Screen-Tools).
                 if (!collapsed) _sectionLabel(context, t),
                 for (final tool in HubTool.values)
                   HermesNavItem(
@@ -415,6 +424,9 @@ class _HubShellState extends State<HubShell>
         break;
       case HubTool.fileManager:
         _selectTool(HubTool.fileManager);
+        break;
+      case HubTool.systemMonitor:
+        _selectTool(HubTool.systemMonitor);
         break;
     }
   }
