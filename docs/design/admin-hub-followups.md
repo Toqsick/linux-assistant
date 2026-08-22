@@ -32,6 +32,10 @@ Manuelle Checks:
 
 Bei Fehlern: Analyzer-/Test-Output dokumentieren → Fix-PR.
 
+**Stand 2026-08-22:** Erster Suite-Lauf brachte 3 Failures (2 Test-Erwartungen
++ Golden-Test ohne deklarierte Dependency) → behoben in #21. Erwartung danach:
+128 passed, 0 failed.
+
 ---
 
 ## 2. l10n: `_tr()`-Pattern durch echte .arb-Keys ersetzen
@@ -146,17 +150,40 @@ flutter gen-l10n
 
 ---
 
-## 3. Golden-Baselines für die neuen Screens
+## 3. Golden-Baselines (Setup war unvollständig)
 
-Setup existiert seit #11 (`test/goldens/`). Lokal:
+Der Golden-Test aus #11 (`test/goldens/layout_golden_test.dart`) importierte
+`golden_toolkit`, das **nie in `pubspec.yaml` eingetragen** wurde – der Loader
+schlug fehl und brach die gesamte Suite. Die Datei wurde in #21 entfernt.
+
+Reaktivierung (lokal, in dieser Reihenfolge):
 
 ```bash
-flutter test --update-goldens
+# 1. Dependency + Lockfile
+flutter pub add --dev golden_toolkit
+git add pubspec.yaml pubspec.lock
+
+# 2. Test-Datei aus der Historie wiederherstellen
+git show 4e716d7:test/goldens/layout_golden_test.dart > test/goldens/layout_golden_test.dart
 ```
 
+3. In der wiederhergestellten Datei `const` vor `SuccessMessage`,
+   `WarningMessage` und `SingleBarChart` entfernen – das sind keine
+   const-Konstruktoren (zweiter Compile-Fehler im CI-Log vom 2026-08-22,
+   wurde damals vom golden_toolkit-Fehler überdeckt).
+
+```bash
+# 4. Baseline erzeugen und prüfen
+flutter test test/goldens/layout_golden_test.dart --update-goldens
+flutter test
+```
+
+- [ ] `golden_toolkit` in `pubspec.yaml` + `pubspec.lock` committed
+- [ ] `layout_golden_test.dart` wiederhergestellt, const-Fixes drin
 - [ ] Baselines: `QuickNotesPage` (Empty-State), `FileManagerPage` (Listing +
       Protected-Banner), `SystemMonitorPage` (Kacheln + Tabelle)
-- [ ] Goldens in CI grün
+- [ ] Goldens in CI grün (Plattform-Falle beachten: Fonts/OS-sensitiv,
+      siehe `docs/design/screenshot-baseline.md` §4)
 
 ---
 
@@ -166,7 +193,7 @@ flutter test --update-goldens
 git fetch --prune && git push origin --delete \
   feature/quick-notes-wiring feature/e2-quick-notes feature/e2-quick-notes-wiring \
   feature/sidebar-tools feature/e4-file-manager feature/e3-system-monitor \
-  feature/e1-browser-launcher feature/admin-hub-spec
+  feature/e1-browser-launcher feature/admin-hub-spec fix/test-suite
 ```
 
 `copilot/migrate-dashboard-widgets-to-mintytheme` (PR #10) **behalten** –
@@ -179,4 +206,5 @@ Merge-Stand unklar, separat prüfen.
 
 - Spec: `docs/design/feature-spec-admin-hub.md`
 - Screen-Tool-Architektur: #17
+- Test-Suite-Fixes: #21
 - Offener Parallel-Track: PR B (#10, Dashboard-Token-Migration)
