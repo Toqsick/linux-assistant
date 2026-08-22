@@ -66,10 +66,12 @@ void main() {
       expect(dir.size, 0);
     });
 
-    test('mode strings look like unix permissions', () async {
+    test('mode strings are 9-char unix permission strings', () async {
+      // FileStat.modeString() is the permission part only ("rwxr-xr-x") –
+      // the type character is FileStat.typeString, a separate getter.
       final listing = await service.listDir(tmp.path);
       for (final entry in listing.entries) {
-        expect(entry.modeString, hasLength(10));
+        expect(entry.modeString, matches(RegExp(r'^[rwx-]{9}$')));
       }
     });
 

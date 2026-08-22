@@ -9,7 +9,7 @@ intr 12345 0 0
 ''';
 
 const procStatB = '''
-cpu  1050 0 550 8900 220 0 110 0 0 0
+cpu  1150 0 650 8700 220 0 130 0 0 0
 cpu0 525 0 275 4450 110 0 55 0 0 0
 cpu1 525 0 275 4450 110 0 55 0 0 0
 intr 12399 0 0
@@ -54,9 +54,10 @@ void main() {
     test('computes the busy percentage between two reads', () {
       final a = SystemMonitorService.parseProcStat(procStatA);
       final b = SystemMonitorService.parseProcStat(procStatB);
-      // delta busy 160 of delta total 1080:
+      // aggregate: delta busy 330 of delta total 1050 → 31.43 %
       expect(SystemMonitorService.cpuUsageDelta(a[0], b[0]),
-          closeTo(14.81, 0.01));
+          closeTo(31.43, 0.01));
+      // per core: delta busy 55 of delta total 515 → 10.68 %
       expect(SystemMonitorService.cpuUsageDelta(a[1], b[1]),
           closeTo(10.68, 0.01));
     });
