@@ -2,22 +2,50 @@
 <!DOCTYPE policyconfig PUBLIC
  "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
  "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+
+<!--
+  One action per privileged entry point.
+
+  There used to be a single action, org.linux-assistant.operations.generic,
+  annotated with the path of run_script.py — a launcher whose only restriction
+  was that the file it was asked to run had to sit in the same directory and
+  end in ".py". Authorising it therefore authorised running any script in that
+  directory as root, and the authorisation dialog could not say which one.
+
+  allow_inactive is "no" throughout: these actions belong to a window the user
+  is looking at. There is no reason for an inactive session to reach them.
+-->
 <policyconfig>
 
   <vendor>Linux-Assistant Project</vendor>
   <vendor_url>https://www.linux-assistant.org/</vendor_url>
 
-  <action id="org.linux-assistant.operations.generic">
-    <description>Linux-Assistant needs root access</description>
-    <message>To perform the requested Linux Assistant action, your password is required.</message>
-    <message xml:lang="de">Um die angefordete Aktion des Linux-Assistants auszuführen, wird Ihr Passwort benötigt.</message>
-    <icon_name>linux-assistant</icon_name> 
+  <action id="org.linux-assistant.run-command-queue">
+    <description>Apply the queued system changes</description>
+    <description xml:lang="de">Die vorgemerkten Systemänderungen ausführen</description>
+    <message>Linux Assistant needs your password to install, remove or update software and to change system settings.</message>
+    <message xml:lang="de">Der Linux-Assistant benötigt Ihr Passwort, um Software zu installieren, zu entfernen oder zu aktualisieren und Systemeinstellungen zu ändern.</message>
+    <icon_name>linux-assistant</icon_name>
     <defaults>
       <allow_any>auth_admin</allow_any>
-      <allow_inactive>auth_admin</allow_inactive>
+      <allow_inactive>no</allow_inactive>
       <allow_active>auth_admin</allow_active>
     </defaults>
-    <annotate key="org.freedesktop.policykit.exec.path">/usr/lib/linux-assistant/additional/python/run_script.py</annotate>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/lib/linux-assistant/additional/python/run_multiple_commands.py</annotate>
+  </action>
+
+  <action id="org.linux-assistant.read-security-report">
+    <description>Read the system security report</description>
+    <description xml:lang="de">Den Sicherheitsbericht des Systems lesen</description>
+    <message>Linux Assistant needs your password to read the system's security settings. Nothing is changed.</message>
+    <message xml:lang="de">Der Linux-Assistant benötigt Ihr Passwort, um die Sicherheitseinstellungen des Systems zu lesen. Es wird nichts verändert.</message>
+    <icon_name>linux-assistant</icon_name>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>no</allow_inactive>
+      <allow_active>auth_admin</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">/usr/lib/linux-assistant/additional/python/read_security_report.py</annotate>
   </action>
 
 </policyconfig>

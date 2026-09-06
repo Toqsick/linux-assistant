@@ -1124,4 +1124,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get whyYay =>
       'AUR helpers install community packages that nobody reviewed for you.';
+
+  @override
+  String deleteSnapshotQuestion(String snapshot) {
+    return 'Delete the snapshot \"$snapshot\"?';
+  }
+
+  @override
+  String get deleteSnapshotWarning =>
+      'This cannot be undone. If this is the only snapshot, there is nothing left to roll back to.';
 }

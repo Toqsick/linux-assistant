@@ -55,20 +55,22 @@ class _SecurityCheckContentState extends State<SecurityCheckContent> {
     final home = "--home=${Platform.environment['HOME']}";
     final distro = Linux.currentenvironment.distribution;
 
-    String script;
+    // A family name, not a script name. The privileged side picks the file
+    // itself, so no path this page computes crosses into root.
+    String family;
     if (distro == DISTROS.OPENSUSE) {
-      script = "check_security_opensuse.py";
+      family = "opensuse";
     } else if (distro == DISTROS.FEDORA) {
-      script = "check_security_fedora.py";
+      family = "fedora";
     } else if ([DISTROS.ARCH, DISTROS.MANJARO, DISTROS.ENDEAVOUR]
         .contains(distro)) {
-      script = "check_security_arch.py";
+      family = "arch";
     } else {
-      script = "check_security.py";
+      family = "debian";
     }
 
-    return Linux.runPythonScript(script,
-        root: true, arguments: [home], getErrorMessages: true);
+    return Linux.runPrivilegedPythonScript("read_security_report.py",
+        arguments: ["--family=$family", home], getErrorMessages: true);
   }
 
   void _reload() {

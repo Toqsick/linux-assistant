@@ -196,8 +196,23 @@ class AfterInstallationService {
       if (softwareManager == SOFTWARE_MANAGERS.APT) {
         Linux.commandQueue.add(
           LinuxCommand(
-            command:
-                "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.APT)} install vim ufw ncdu htop git pwgen curl unzip psmisc fail2ban cron tree -y",
+            argv: [
+              Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.APT),
+              "install",
+              "vim",
+              "ufw",
+              "ncdu",
+              "htop",
+              "git",
+              "pwgen",
+              "curl",
+              "unzip",
+              "psmisc",
+              "fail2ban",
+              "cron",
+              "tree",
+              "-y"
+            ],
             userId: 0,
             environment: const {"DEBIAN_FRONTEND": "noninteractive"},
           ),
@@ -207,8 +222,24 @@ class AfterInstallationService {
       if (softwareManager == SOFTWARE_MANAGERS.ZYPPER) {
         Linux.commandQueue.add(
           LinuxCommand(
-            command:
-                "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER)} --non-interactive install vim ufw ncdu htop git pwgen curl unzip psmisc fail2ban cronie tree",
+            argv: [
+              Linux.getExecutablePathOfSoftwareManager(
+                  SOFTWARE_MANAGERS.ZYPPER),
+              "--non-interactive",
+              "install",
+              "vim",
+              "ufw",
+              "ncdu",
+              "htop",
+              "git",
+              "pwgen",
+              "curl",
+              "unzip",
+              "psmisc",
+              "fail2ban",
+              "cronie",
+              "tree"
+            ],
             userId: 0,
             environment: const {},
           ),
@@ -218,8 +249,23 @@ class AfterInstallationService {
       if (softwareManager == SOFTWARE_MANAGERS.DNF) {
         Linux.commandQueue.add(
           LinuxCommand(
-            command:
-                "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF)} install vim-enhanced ufw ncdu htop git pwgen curl unzip psmisc fail2ban cronie tree -y",
+            argv: [
+              Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF),
+              "install",
+              "vim-enhanced",
+              "ufw",
+              "ncdu",
+              "htop",
+              "git",
+              "pwgen",
+              "curl",
+              "unzip",
+              "psmisc",
+              "fail2ban",
+              "cronie",
+              "tree",
+              "-y"
+            ],
             userId: 0,
             environment: const {},
           ),
@@ -229,8 +275,25 @@ class AfterInstallationService {
       if (softwareManager == SOFTWARE_MANAGERS.PACMAN) {
         Linux.commandQueue.add(
           LinuxCommand(
-            command:
-                "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN)} -S --needed --noconfirm vim ufw ncdu htop git pwgen curl unzip psmisc fail2ban cronie tree",
+            argv: [
+              Linux.getExecutablePathOfSoftwareManager(
+                  SOFTWARE_MANAGERS.PACMAN),
+              "-S",
+              "--needed",
+              "--noconfirm",
+              "vim",
+              "ufw",
+              "ncdu",
+              "htop",
+              "git",
+              "pwgen",
+              "curl",
+              "unzip",
+              "psmisc",
+              "fail2ban",
+              "cronie",
+              "tree"
+            ],
             userId: 0,
             environment: const {},
           ),
@@ -246,8 +309,23 @@ class AfterInstallationService {
       if (softwareManager == SOFTWARE_MANAGERS.APT) {
         Linux.commandQueue.add(
           LinuxCommand(
-            command:
-                "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.APT)} remove vim ufw ncdu htop git pwgen curl unzip psmisc fail2ban cron tree -y",
+            argv: [
+              Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.APT),
+              "remove",
+              "vim",
+              "ufw",
+              "ncdu",
+              "htop",
+              "git",
+              "pwgen",
+              "curl",
+              "unzip",
+              "psmisc",
+              "fail2ban",
+              "cron",
+              "tree",
+              "-y"
+            ],
             userId: 0,
             environment: const {"DEBIAN_FRONTEND": "noninteractive"},
           ),
@@ -257,8 +335,24 @@ class AfterInstallationService {
       if (softwareManager == SOFTWARE_MANAGERS.ZYPPER) {
         Linux.commandQueue.add(
           LinuxCommand(
-            command:
-                "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER)} --non-interactive remove vim ufw ncdu htop git pwgen curl unzip psmisc fail2ban cronie tree",
+            argv: [
+              Linux.getExecutablePathOfSoftwareManager(
+                  SOFTWARE_MANAGERS.ZYPPER),
+              "--non-interactive",
+              "remove",
+              "vim",
+              "ufw",
+              "ncdu",
+              "htop",
+              "git",
+              "pwgen",
+              "curl",
+              "unzip",
+              "psmisc",
+              "fail2ban",
+              "cronie",
+              "tree"
+            ],
             userId: 0,
             environment: const {},
           ),
@@ -268,8 +362,23 @@ class AfterInstallationService {
       if (softwareManager == SOFTWARE_MANAGERS.DNF) {
         Linux.commandQueue.add(
           LinuxCommand(
-            command:
-                "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF)} remove vim-enhanced ufw ncdu htop git pwgen curl unzip psmisc fail2ban cronie tree -y",
+            argv: [
+              Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF),
+              "remove",
+              "vim-enhanced",
+              "ufw",
+              "ncdu",
+              "htop",
+              "git",
+              "pwgen",
+              "curl",
+              "unzip",
+              "psmisc",
+              "fail2ban",
+              "cronie",
+              "tree",
+              "-y"
+            ],
             userId: 0,
             environment: const {},
           ),
@@ -279,8 +388,24 @@ class AfterInstallationService {
       if (softwareManager == SOFTWARE_MANAGERS.PACMAN) {
         Linux.commandQueue.add(
           LinuxCommand(
-            command:
-                "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN)} -Rs --noconfirm vim ufw ncdu htop git pwgen curl unzip psmisc fail2ban cronie tree",
+            argv: [
+              Linux.getExecutablePathOfSoftwareManager(
+                  SOFTWARE_MANAGERS.PACMAN),
+              "-Rs",
+              "--noconfirm",
+              "vim",
+              "ufw",
+              "ncdu",
+              "htop",
+              "git",
+              "pwgen",
+              "curl",
+              "unzip",
+              "psmisc",
+              "fail2ban",
+              "cronie",
+              "tree"
+            ],
             userId: 0,
             environment: const {},
           ),

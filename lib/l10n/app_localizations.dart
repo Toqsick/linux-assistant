@@ -2063,6 +2063,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'AUR helpers install community packages that nobody reviewed for you.'**
   String get whyYay;
+
+  /// Confirmation before a Timeshift snapshot is removed
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the snapshot \"{snapshot}\"?'**
+  String deleteSnapshotQuestion(String snapshot);
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'This cannot be undone. If this is the only snapshot, there is nothing left to roll back to.'**
+  String get deleteSnapshotWarning;
 }
 
 class _AppLocalizationsDelegate

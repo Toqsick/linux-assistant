@@ -36,10 +36,21 @@ class TimeshiftCleanWidget extends StatelessWidget {
                     text: "(Timeshift)",
                     buttonText: AppLocalizations.of(context)!.remove,
                     onPressed: () async {
-                      Linux.commandQueue.add(LinuxCommand(
-                          userId: 0,
-                          command:
-                              "timeshift --delete  --snapshot '$timeshiftSnapshot'"));
+                      // Deleting a snapshot is not a disk-cleanup detail: it
+                      // can be the last rollback point on the machine, and the
+                      // button used to act on the first click.
+                      final bool confirmed =
+                          await _confirmDeletion(context, timeshiftSnapshot);
+                      if (!confirmed || !context.mounted) {
+                        return;
+                      }
+
+                      Linux.commandQueue.add(LinuxCommand(userId: 0, argv: [
+                        "timeshift",
+                        "--delete",
+                        "--snapshot",
+                        timeshiftSnapshot
+                      ]));
                       unawaited(Navigator.of(context).push(MaterialPageRoute(
                           builder: (context) => RunCommandQueue(
                                 title: AppLocalizations.of(context)!
@@ -53,6 +64,28 @@ class TimeshiftCleanWidget extends StatelessWidget {
           }
           return MintYProgressIndicatorCircle();
         });
+  }
+
+  Future<bool> _confirmDeletion(BuildContext context, String snapshot) async {
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final bool? answer = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.deleteSnapshotQuestion(snapshot)),
+        content: Text(l10n.deleteSnapshotWarning),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(l10n.remove),
+          ),
+        ],
+      ),
+    );
+    return answer ?? false;
   }
 
   Future<List<String>> _getTimeshiftSnapshots() async {

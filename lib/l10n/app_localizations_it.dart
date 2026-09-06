@@ -1141,4 +1141,13 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get whyYay =>
       'Gli helper AUR installano pacchetti della community che nessuno ha verificato per te.';
+
+  @override
+  String deleteSnapshotQuestion(String snapshot) {
+    return 'Eliminare lo snapshot \"$snapshot\"?';
+  }
+
+  @override
+  String get deleteSnapshotWarning =>
+      'L\'operazione non è reversibile. Se questo è l\'unico snapshot, non resterà nulla a cui tornare.';
 }

@@ -1220,5 +1220,21 @@
     "placeholders": {},
     "description": "",
     "type": "text"
+  },
+  "deleteSnapshotQuestion": "Eliminare lo snapshot \"{snapshot}\"?",
+  "@deleteSnapshotQuestion": {
+    "placeholders": {
+      "snapshot": {
+        "type": "String"
+      }
+    },
+    "description": "Confirmation before a Timeshift snapshot is removed",
+    "type": "text"
+  },
+  "deleteSnapshotWarning": "L'operazione non è reversibile. Se questo è l'unico snapshot, non resterà nulla a cui tornare.",
+  "@deleteSnapshotWarning": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
   }
 }

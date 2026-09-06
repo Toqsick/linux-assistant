@@ -1,3 +1,7 @@
+import 'dart:io';
+
+import 'package:crypto/crypto.dart';
+import 'package:http/http.dart' as http;
 import 'package:linux_assistant/enums/distros.dart';
 import 'package:linux_assistant/enums/softwareManagers.dart';
 import 'package:linux_assistant/main.dart';
@@ -7,6 +11,15 @@ import 'package:linux_assistant/services/linux.dart';
 import 'package:linux_assistant/services/logger.dart';
 
 class LinuxAssistantUpdater {
+  /// The GitHub repository the update check looks at.
+  ///
+  /// This fork's builds carry a higher version number than upstream's, so
+  /// pointing the updater at upstream would eventually replace a hardened
+  /// build with an unhardened one the moment upstream passes it. Change this
+  /// back to "Jean28518/linux-assistant" only together with the version
+  /// scheme.
+  static const String releaseRepository = "Toqsick/linux-assistant";
+
   static Map? newestVersionInformation;
 
   /// Only searches, if the last successful search is 7 days old, otherwise returns false;
@@ -76,52 +89,115 @@ class LinuxAssistantUpdater {
     return parts;
   }
 
-  /// Only adds commands to Linux.commandQueue.
-  static void updateLinuxAssistantToNewestVersion() {
-    assert(newestVersionInformation != null);
-    for (Map asset in newestVersionInformation!["assets"]) {
-      // Debian based systems
+  /// Where the downloaded package is staged.
+  ///
+  /// Not /tmp. The package was downloaded there and then installed as root
+  /// from that path, and /tmp is world-writable: any local account could
+  /// replace the file between the two queue entries and have it installed with
+  /// full privileges. This directory belongs to the user running the app.
+  static Directory get downloadDirectory =>
+      Directory("${Linux.getHomeDirectory()}.cache/linux-assistant/updates");
+
+  /// Downloads the release asset and verifies it, then queues the install.
+  ///
+  /// Returns an error message, or null on success. The download used to be a
+  /// queued `wget` followed by a queued `apt install`, with nothing in between
+  /// checking that the file was the one GitHub advertised — and the runner
+  /// carries on after a failed command, so a failed download would have been
+  /// followed by an install attempt anyway.
+  static Future<String?> prepareUpdate() async {
+    final Map? release = newestVersionInformation;
+    if (release == null || release["assets"] is! List) {
+      return "No release information available.";
+    }
+
+    final Map? asset = _assetForThisSystem(release["assets"] as List);
+    if (asset == null) {
+      return "This release carries no package for this system.";
+    }
+
+    final String downloadUrl = (asset["browser_download_url"] ?? "") as String;
+    if (downloadUrl.isEmpty) {
+      return "The release asset has no download URL.";
+    }
+
+    // GitHub publishes the asset digest as "sha256:<hex>". Without it there is
+    // nothing to verify against, and installing an unverified package as root
+    // is the thing this method exists to avoid.
+    final String digest = (asset["digest"] ?? "") as String;
+    if (!digest.startsWith("sha256:")) {
+      return "The release asset carries no SHA-256 digest; refusing to install it.";
+    }
+    final String expected = digest.substring("sha256:".length).toLowerCase();
+
+    final File target =
+        File("${downloadDirectory.path}/${downloadUrl.split("/").last}");
+
+    try {
+      await downloadDirectory.create(recursive: true);
+      final http.Response response = await http
+          .get(Uri.parse(downloadUrl))
+          .timeout(const Duration(minutes: 10));
+      if (response.statusCode != 200) {
+        return "Download failed with HTTP ${response.statusCode}.";
+      }
+
+      final String actual = sha256.convert(response.bodyBytes).toString();
+      if (actual != expected) {
+        return "The downloaded package does not match its published checksum.";
+      }
+
+      await target.writeAsBytes(response.bodyBytes, flush: true);
+    } catch (e) {
+      logError("Downloading the update failed", e);
+      return "Downloading the update failed: $e";
+    }
+
+    _queueInstall(target.path);
+    return null;
+  }
+
+  static Map? _assetForThisSystem(List assets) {
+    for (final asset in assets) {
+      if (asset is! Map) {
+        continue;
+      }
       if (asset["content_type"] == "application/vnd.debian.binary-package" &&
           Linux.usesCurrentEnvironmentDebPackages()) {
-        String downloadURL = asset["browser_download_url"];
-        if (downloadURL.isEmpty) {
-          logError("Updating Linux Assistant failed: download URL is empty.");
-          return;
-        }
-        String fileName = downloadURL.split("/").last;
-        Linux.commandQueue.add(LinuxCommand(
-            userId: Linux.currentenvironment.currentUserId,
-            command: "wget $downloadURL -P /tmp/"));
-        Linux.commandQueue.add(LinuxCommand(
-            userId: 0, command: "/usr/bin/apt install /tmp/$fileName -y"));
+        return asset;
       }
-      // RPM
       if (asset["content_type"] == "application/x-rpm" &&
           Linux.usesCurrentEnvironmentRPMPackages()) {
-        String downloadURL = asset["browser_download_url"];
-        if (downloadURL.isEmpty) {
-          logError("Updating Linux Assistant failed: download URL is empty.");
-          return;
-        }
-        String fileName = downloadURL.split("/").last;
-        Linux.commandQueue.add(LinuxCommand(
-            userId: Linux.currentenvironment.currentUserId,
-            command: "wget $downloadURL -P /tmp/"));
-        if (Linux.currentenvironment.installedSoftwareManagers
-            .contains(SOFTWARE_MANAGERS.ZYPPER)) {
-          Linux.commandQueue.add(LinuxCommand(
-              userId: 0,
-              command:
-                  "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER)} --non-interactive  --no-gpg-checks install /tmp/$fileName"));
-        }
-        if (Linux.currentenvironment.installedSoftwareManagers
-            .contains(SOFTWARE_MANAGERS.DNF)) {
-          Linux.commandQueue.add(LinuxCommand(
-              userId: 0,
-              command:
-                  "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF)} install /tmp/$fileName -y"));
-        }
+        return asset;
       }
+    }
+    return null;
+  }
+
+  static void _queueInstall(String path) {
+    if (path.endsWith(".deb")) {
+      Linux.commandQueue.add(LinuxCommand(
+          userId: 0, argv: ["/usr/bin/apt", "install", path, "-y"]));
+      return;
+    }
+
+    if (Linux.currentenvironment.installedSoftwareManagers
+        .contains(SOFTWARE_MANAGERS.ZYPPER)) {
+      Linux.commandQueue.add(LinuxCommand(userId: 0, argv: [
+        Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER),
+        "--non-interactive",
+        "install",
+        path
+      ]));
+    }
+    if (Linux.currentenvironment.installedSoftwareManagers
+        .contains(SOFTWARE_MANAGERS.DNF)) {
+      Linux.commandQueue.add(LinuxCommand(userId: 0, argv: [
+        Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF),
+        "install",
+        path,
+        "-y"
+      ]));
     }
   }
 }

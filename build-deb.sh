@@ -14,9 +14,14 @@ mkdir -p "$STAGE/DEBIAN"
 cp deb/DEBIAN/control "$STAGE/DEBIAN/control"
 
 # Build Linux Assistant
-chmod +x additional/python/run_script.py
+# The two privileged entry points are named in the polkit policy by path, so
+# pkexec has to be able to execute them directly.
+chmod +x additional/python/run_multiple_commands.py
+chmod +x additional/python/read_security_report.py
 flutter build linux
 cp -r additional build/linux/x64/release/bundle/
+# The runner's unit tests are not part of the product.
+rm -rf build/linux/x64/release/bundle/additional/python/tests
 cp version build/linux/x64/release/bundle/
 
 # Prepare deb files for packaging

@@ -811,5 +811,21 @@
     "paikkamerkit": {},
     "description": "",
     "tyyppi": "teksti"
+  },
+  "deleteSnapshotQuestion": "Poistetaanko tilannevedos \"{snapshot}\"?",
+  "@deleteSnapshotQuestion": {
+    "placeholders": {
+      "snapshot": {
+        "type": "String"
+      }
+    },
+    "description": "Confirmation before a Timeshift snapshot is removed",
+    "type": "text"
+  },
+  "deleteSnapshotWarning": "Tätä ei voi perua. Jos tämä on ainoa tilannevedos, mitään palautettavaa ei jää.",
+  "@deleteSnapshotWarning": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
   }
 }

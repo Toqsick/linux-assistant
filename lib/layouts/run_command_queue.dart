@@ -102,7 +102,7 @@ class _RunCommandQueueState extends State<RunCommandQueue> {
     ];
     for (LinuxCommand command in _commands) {
       tableData.add([
-        command.command,
+        command.displayCommand,
         // command.description,
         command.userId == 0
             ? AppLocalizations.of(context)!.yes

@@ -1132,4 +1132,13 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get whyYay =>
       'AUR-Helfer installieren Community-Pakete, die niemand für dich geprüft hat.';
+
+  @override
+  String deleteSnapshotQuestion(String snapshot) {
+    return 'Den Schnappschuss \"$snapshot\" löschen?';
+  }
+
+  @override
+  String get deleteSnapshotWarning =>
+      'Das lässt sich nicht rückgängig machen. Wenn es der einzige Schnappschuss ist, gibt es danach nichts mehr, worauf zurückgesetzt werden kann.';
 }

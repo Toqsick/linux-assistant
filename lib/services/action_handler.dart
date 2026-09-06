@@ -240,10 +240,12 @@ class ActionHandler {
 
     if (actionEntry.action.startsWith("zypper-install:")) {
       String pkg = actionEntry.action.replaceFirst("zypper-install:", "");
-      Linux.commandQueue.add(LinuxCommand(
-          userId: 0,
-          command:
-              "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER)} --non-interactive install $pkg"));
+      Linux.commandQueue.add(LinuxCommand(userId: 0, argv: [
+        Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER),
+        "--non-interactive",
+        "install",
+        pkg
+      ]));
       if (!context.mounted) return;
       unawaited(Navigator.push(
         context,
@@ -271,10 +273,12 @@ class ActionHandler {
 
     if (actionEntry.action.startsWith("dnf-install:")) {
       String pkg = actionEntry.action.replaceFirst("dnf-install:", "");
-      Linux.commandQueue.add(LinuxCommand(
-          userId: 0,
-          command:
-              "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF)} install $pkg -y"));
+      Linux.commandQueue.add(LinuxCommand(userId: 0, argv: [
+        Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF),
+        "install",
+        pkg,
+        "-y"
+      ]));
       if (!context.mounted) return;
       unawaited(Navigator.push(
         context,
@@ -302,10 +306,13 @@ class ActionHandler {
 
     if (actionEntry.action.startsWith("pacman-install:")) {
       String pkg = actionEntry.action.replaceFirst("pacman-install:", "");
-      Linux.commandQueue.add(LinuxCommand(
-          userId: 0,
-          command:
-              "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN)} -S --needed --noconfirm $pkg"));
+      Linux.commandQueue.add(LinuxCommand(userId: 0, argv: [
+        Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN),
+        "-S",
+        "--needed",
+        "--noconfirm",
+        pkg
+      ]));
       if (!context.mounted) return;
       unawaited(Navigator.push(
         context,
@@ -320,10 +327,12 @@ class ActionHandler {
 
     if (actionEntry.action.startsWith("pacman-uninstall:")) {
       String pkg = actionEntry.action.replaceFirst("pacman-uninstall:", "");
-      Linux.commandQueue.add(LinuxCommand(
-          userId: 0,
-          command:
-              "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN)} -Rs --noconfirm $pkg"));
+      Linux.commandQueue.add(LinuxCommand(userId: 0, argv: [
+        Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN),
+        "-Rs",
+        "--noconfirm",
+        pkg
+      ]));
       if (!context.mounted) return;
       unawaited(Navigator.push(
           context,
@@ -335,10 +344,13 @@ class ActionHandler {
 
     if (actionEntry.action.startsWith("flatpak-install:")) {
       String pkg = actionEntry.action.replaceFirst("flatpak-install:", "");
-      Linux.commandQueue.add(LinuxCommand(
-          userId: 0,
-          command:
-              "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.FLATPAK)} install $pkg -y --noninteractive"));
+      Linux.commandQueue.add(LinuxCommand(userId: 0, argv: [
+        Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.FLATPAK),
+        "install",
+        pkg,
+        "-y",
+        "--noninteractive"
+      ]));
       if (!context.mounted) return;
       unawaited(Navigator.push(
         context,
@@ -372,8 +384,11 @@ class ActionHandler {
       String pkg = actionEntry.action.replaceFirst("snap-install:", "");
       Linux.commandQueue.add(LinuxCommand(
         userId: 0,
-        command:
-            "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.SNAP)} install $pkg",
+        argv: [
+          Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.SNAP),
+          "install",
+          pkg
+        ],
         environment: {"DEBIAN_FRONTEND": "noninteractive"},
       ));
       if (!context.mounted) return;

@@ -1206,5 +1206,21 @@
     "placeholders": {},
     "description": "",
     "type": "text"
+  },
+  "deleteSnapshotQuestion": "Delete the snapshot \"{snapshot}\"?",
+  "@deleteSnapshotQuestion": {
+    "placeholders": {
+      "snapshot": {
+        "type": "String"
+      }
+    },
+    "description": "Confirmation before a Timeshift snapshot is removed",
+    "type": "text"
+  },
+  "deleteSnapshotWarning": "This cannot be undone. If this is the only snapshot, there is nothing left to roll back to.",
+  "@deleteSnapshotWarning": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
   }
 }
