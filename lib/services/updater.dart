@@ -4,6 +4,7 @@ import 'package:linux_assistant/main.dart';
 import 'package:linux_assistant/models/linux_command.dart';
 import 'package:linux_assistant/services/config_handler.dart';
 import 'package:linux_assistant/services/linux.dart';
+import 'package:linux_assistant/services/logger.dart';
 
 class LinuxAssistantUpdater {
   static Map? newestVersionInformation;
@@ -26,11 +27,11 @@ class LinuxAssistantUpdater {
     }
 
     String newestVersion = ConfigHandler().getValueUnsafe(
-        "newest-linux-assistant-version", CURRENT_LINUX_ASSISTANT_VERSION);
+        "newest-linux-assistant-version", currentLinuxAssistantVersion);
 
     // If reading the version file failed, just return false. Else the version
     // check will crash.
-    return CURRENT_LINUX_ASSISTANT_VERSION.isEmpty
+    return currentLinuxAssistantVersion.isEmpty
         ? false
         : isVersionGreaterThanCurrent(newestVersion);
   }
@@ -41,14 +42,15 @@ class LinuxAssistantUpdater {
   /// component count and `int.parse` each part, so a release tagged `0.8` or
   /// `v0.8.0-rc1` threw instead of simply reporting "no update".
   static bool isVersionGreaterThanCurrent(String version) {
-    final List<int> current = _parseVersion(CURRENT_LINUX_ASSISTANT_VERSION);
+    final List<int> current = _parseVersion(currentLinuxAssistantVersion);
     final List<int> other = _parseVersion(version);
 
     if (current.isEmpty || other.isEmpty) {
       return false;
     }
 
-    final int length = current.length > other.length ? current.length : other.length;
+    final int length =
+        current.length > other.length ? current.length : other.length;
     for (int i = 0; i < length; i++) {
       final int a = i < other.length ? other[i] : 0;
       final int b = i < current.length ? current[i] : 0;
@@ -83,8 +85,7 @@ class LinuxAssistantUpdater {
           Linux.usesCurrentEnvironmentDebPackages()) {
         String downloadURL = asset["browser_download_url"];
         if (downloadURL.isEmpty) {
-          print(
-              "Error while updating Linux-Assistant to newest version. Download URL empty.");
+          logError("Updating Linux Assistant failed: download URL is empty.");
           return;
         }
         String fileName = downloadURL.split("/").last;
@@ -99,8 +100,7 @@ class LinuxAssistantUpdater {
           Linux.usesCurrentEnvironmentRPMPackages()) {
         String downloadURL = asset["browser_download_url"];
         if (downloadURL.isEmpty) {
-          print(
-              "Error while updating Linux-Assistant to newest version. Download URL empty.");
+          logError("Updating Linux Assistant failed: download URL is empty.");
           return;
         }
         String fileName = downloadURL.split("/").last;

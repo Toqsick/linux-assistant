@@ -10,8 +10,8 @@ import 'package:linux_assistant/l10n/app_localizations.dart';
 import 'dart:io';
 
 class CleanDiskPage extends StatelessWidget {
-  late String mountpoint;
-  CleanDiskPage({super.key, required this.mountpoint});
+  final String mountpoint;
+  const CleanDiskPage({super.key, required this.mountpoint});
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +56,8 @@ class CleanDiskPage extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: MintYButton(
-                onPressed: () => Linux.openDiskSpaceAnalyzer(context, mountpoint),
+                onPressed: () =>
+                    Linux.openDiskSpaceAnalyzer(context, mountpoint),
                 text: Text(AppLocalizations.of(context)!.analyseDiskspace,
                     style: MintY.heading4White),
                 color: MintY.currentColor,
@@ -110,7 +111,7 @@ class CleanDiskPage extends StatelessWidget {
       future: LinuxFilesystem.disks(),
       builder: (context, snapshot) {
         if (snapshot.hasData) {
-          List<DeviceInfo> disks = snapshot.data! as List<DeviceInfo>;
+          List<DeviceInfo> disks = snapshot.data!;
           DeviceInfo? found;
           for (DeviceInfo disk in disks) {
             if (disk.mountPoint == mountpoint) {
@@ -135,14 +136,7 @@ class CleanDiskPage extends StatelessWidget {
                   ),
                   SizedBox(height: 10),
                   Text(
-                    AppLocalizations.of(context)!.diskUsage +
-                        ": " +
-                        found.sizeUsed +
-                        " / " +
-                        found.size +
-                        " (" +
-                        found.usedPercent.toString() +
-                        "%)",
+                    "${AppLocalizations.of(context)!.diskUsage}: ${found.sizeUsed} / ${found.size} (${found.usedPercent}%)",
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ],

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 class SuccessMessage extends StatelessWidget {
-  late String text;
-  SuccessMessage({Key? key, this.text = ""}) : super(key: key);
+  final String text;
+  const SuccessMessage({super.key, this.text = ""});
 
   @override
   Widget build(BuildContext context) {

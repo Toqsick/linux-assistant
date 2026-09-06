@@ -10,20 +10,23 @@ import 'package:linux_assistant/l10n/app_localizations.dart';
 class AfterInstallationUtilitiesSelection extends StatelessWidget {
   const AfterInstallationUtilitiesSelection({super.key});
 
-  static Future<bool> keepassxcInstalled = Linux.areApplicationsInstalled(
-      ["keepassxc", "org.keepassxc.KeePassXC"]);
-  static Future<bool> bitwardenInstalled = Linux.areApplicationsInstalled(
-      ["bitwarden", "com.bitwarden.desktop"]);
+  static Future<bool> keepassxcInstalled =
+      Linux.areApplicationsInstalled(["keepassxc", "org.keepassxc.KeePassXC"]);
+  static Future<bool> bitwardenInstalled =
+      Linux.areApplicationsInstalled(["bitwarden", "com.bitwarden.desktop"]);
   static Future<bool> pikaBackupInstalled = Linux.areApplicationsInstalled(
       ["pika-backup", "org.gnome.World.PikaBackup"]);
-  static Future<bool> nextcloudInstalled = Linux.areApplicationsInstalled(
-      ["nextcloud-desktop", "nextcloud-client", "com.nextcloud.desktopclient.nextcloud"]);
-  static Future<bool> vortaInstalled = Linux.areApplicationsInstalled(
-      ["vorta", "com.borgbase.Vorta"]);
-  static Future<bool> obsidianInstalled = Linux.areApplicationsInstalled(
-      ["obsidian", "md.obsidian.Obsidian"]);
-  static Future<bool> terminalToolsInstalled = Linux.areApplicationsInstalled(
-      ["ncdu"]);
+  static Future<bool> nextcloudInstalled = Linux.areApplicationsInstalled([
+    "nextcloud-desktop",
+    "nextcloud-client",
+    "com.nextcloud.desktopclient.nextcloud"
+  ]);
+  static Future<bool> vortaInstalled =
+      Linux.areApplicationsInstalled(["vorta", "com.borgbase.Vorta"]);
+  static Future<bool> obsidianInstalled =
+      Linux.areApplicationsInstalled(["obsidian", "md.obsidian.Obsidian"]);
+  static Future<bool> terminalToolsInstalled =
+      Linux.areApplicationsInstalled(["ncdu"]);
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +111,8 @@ class AfterInstallationUtilitiesSelection extends StatelessWidget {
                 AfterInstallationService.pikaBackup[1] =
                     snapshot.data.toString() == 'true';
                 return MintYSelectableEntryWithIconHorizontal(
-                  icon: const SystemIcon(iconString: "pika-backup", iconSize: 64),
+                  icon:
+                      const SystemIcon(iconString: "pika-backup", iconSize: 64),
                   title: "Pika Backup",
                   text: AppLocalizations.of(context)!.pikaDescription,
                   selected: snapshot.data.toString() == 'true',
@@ -240,7 +244,8 @@ class AfterInstallationUtilitiesSelection extends StatelessWidget {
                 AfterInstallationService.terminalTools[1] =
                     snapshot.data.toString() == 'true';
                 return MintYSelectableEntryWithIconHorizontal(
-                  icon: const SystemIcon(iconString: "utilities-terminal", iconSize: 64),
+                  icon: const SystemIcon(
+                      iconString: "utilities-terminal", iconSize: 64),
                   title: "Terminal Tools",
                   text: AppLocalizations.of(context)!.terminalToolsDescription,
                   selected: snapshot.data.toString() == 'true',

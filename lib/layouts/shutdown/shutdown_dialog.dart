@@ -4,9 +4,17 @@ import 'package:linux_assistant/layouts/mint_y.dart';
 import 'package:linux_assistant/services/linux.dart';
 import 'package:linux_assistant/services/main_search_loader.dart';
 
-class ShutdownDialog extends StatelessWidget {
-  ShutdownDialog({super.key});
-  int minutes = 0;
+class ShutdownDialog extends StatefulWidget {
+  const ShutdownDialog({super.key});
+
+  @override
+  State<ShutdownDialog> createState() => _ShutdownDialogState();
+}
+
+class _ShutdownDialogState extends State<ShutdownDialog> {
+  // The typed delay is state the dialog owns. It used to be a field on a
+  // StatelessWidget, which Flutter may discard and rebuild at any time.
+  int _minutes = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -38,12 +46,13 @@ class ShutdownDialog extends StatelessWidget {
                       // height: 50,
                       child: TextField(
                         onChanged: (value) {
-                          if (int.tryParse(value) != null) {
-                            minutes = int.parse(value);
+                          final int? parsed = int.tryParse(value);
+                          if (parsed != null) {
+                            _minutes = parsed;
                           }
                         },
                         onSubmitted: (value) {
-                          Linux.shutdown(minutes: minutes);
+                          Linux.shutdown(minutes: _minutes);
                           Navigator.of(context).push(MaterialPageRoute(
                             builder: (context) => const MainSearchLoader(),
                           ));
@@ -87,7 +96,7 @@ class ShutdownDialog extends StatelessWidget {
                     style: MintY.heading4White,
                   ),
                   onPressed: () {
-                    Linux.shutdown(minutes: minutes);
+                    Linux.shutdown(minutes: _minutes);
                   },
                 ),
               ],

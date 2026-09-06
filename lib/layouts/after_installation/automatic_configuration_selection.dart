@@ -9,7 +9,7 @@ import 'package:linux_assistant/services/linux.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
 
 class AfterInstallationAutomaticConfiguration extends StatelessWidget {
-  AfterInstallationAutomaticConfiguration({Key? key}) : super(key: key);
+  AfterInstallationAutomaticConfiguration({super.key});
 
   final Future<bool> isNvidiaCardInstalledOnSystem =
       Linux.isNvidiaCardInstalledOnSystem();

@@ -248,8 +248,7 @@ class _DashboardSectionState extends State<DashboardSection> {
       footer: memory != null && memory.hasSwap
           ? HermesMetaRow(
               label: l10n.swapLabel,
-              value:
-                  "${_gb(memory.swapUsedMb)} / ${_gb(memory.swapTotalMb)}",
+              value: "${_gb(memory.swapUsedMb)} / ${_gb(memory.swapTotalMb)}",
             )
           : null,
     );
@@ -382,8 +381,7 @@ class _DashboardSectionState extends State<DashboardSection> {
                   height: 32,
                   decoration: BoxDecoration(
                     color: t.accentBg,
-                    borderRadius:
-                        BorderRadius.circular(HermesTokens.radiusSm),
+                    borderRadius: BorderRadius.circular(HermesTokens.radiusSm),
                   ),
                   child: Icon(Icons.bolt, size: 16, color: t.accentText),
                 ),

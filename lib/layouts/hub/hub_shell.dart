@@ -498,9 +498,9 @@ class _HubShellState extends State<HubShell>
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      if (CURRENT_LINUX_ASSISTANT_VERSION.isNotEmpty)
+                      if (currentLinuxAssistantVersion.isNotEmpty)
                         Text(
-                          "v$CURRENT_LINUX_ASSISTANT_VERSION",
+                          "v$currentLinuxAssistantVersion",
                           style: TextStyle(color: t.muted, fontSize: 11),
                         ),
                     ],

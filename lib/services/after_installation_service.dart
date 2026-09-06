@@ -84,7 +84,8 @@ class AfterInstallationService {
         ["waterfox", "net.waterfox.waterfox", "waterfox"], waterfox);
 
     Future fTorBrowser = applyApplicationActionIfNecessary(
-        ["torbrowser-launcher", "org.torproject.torbrowser-launcher"], torBrowser);
+        ["torbrowser-launcher", "org.torproject.torbrowser-launcher"],
+        torBrowser);
 
     /// We need to wait until every function has finished,
     /// because otherwise the command queue will get filled to late.
@@ -134,10 +135,10 @@ class AfterInstallationService {
     Future fZoom = applyApplicationActionIfNecessary(
         ["us.zoom.Zoom", "zoom-client"], zoom);
 
-    Future fWhatsie = applyApplicationActionIfNecessary(
-        ["whatsie"], whatsie);
+    Future fWhatsie = applyApplicationActionIfNecessary(["whatsie"], whatsie);
     Future fTelegram = applyApplicationActionIfNecessary(
-        ["telegram-desktop", "org.telegram.desktop", "telegram-desktop"], telegram);
+        ["telegram-desktop", "org.telegram.desktop", "telegram-desktop"],
+        telegram);
     Future fThreema = applyApplicationActionIfNecessary(
         ["ch.threema.threema-desktop"], threema);
 
@@ -159,8 +160,11 @@ class AfterInstallationService {
         ["bitwarden", "com.bitwarden.desktop"], bitwarden);
     Future fPika = applyApplicationActionIfNecessary(
         ["pika-backup", "org.gnome.World.PikaBackup"], pikaBackup);
-    Future fNextcloud = applyApplicationActionIfNecessary(
-        ["nextcloud-desktop", "nextcloud-client", "com.nextcloud.desktopclient.nextcloud"], nextcloudClient);
+    Future fNextcloud = applyApplicationActionIfNecessary([
+      "nextcloud-desktop",
+      "nextcloud-client",
+      "com.nextcloud.desktopclient.nextcloud"
+    ], nextcloudClient);
     Future fVorta = applyApplicationActionIfNecessary(
         ["vorta", "com.borgbase.Vorta"], vorta);
     Future fObsidian = applyApplicationActionIfNecessary(
@@ -187,11 +191,13 @@ class AfterInstallationService {
   }
 
   static Future<void> installTerminalTools() async {
-    for (SOFTWARE_MANAGERS softwareManager in Linux.currentenvironment.installedSoftwareManagers) {
+    for (SOFTWARE_MANAGERS softwareManager
+        in Linux.currentenvironment.installedSoftwareManagers) {
       if (softwareManager == SOFTWARE_MANAGERS.APT) {
         Linux.commandQueue.add(
           LinuxCommand(
-            command: "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.APT)} install vim ufw ncdu htop git pwgen curl unzip psmisc fail2ban cron tree -y",
+            command:
+                "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.APT)} install vim ufw ncdu htop git pwgen curl unzip psmisc fail2ban cron tree -y",
             userId: 0,
             environment: const {"DEBIAN_FRONTEND": "noninteractive"},
           ),
@@ -201,7 +207,8 @@ class AfterInstallationService {
       if (softwareManager == SOFTWARE_MANAGERS.ZYPPER) {
         Linux.commandQueue.add(
           LinuxCommand(
-            command: "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER)} --non-interactive install vim ufw ncdu htop git pwgen curl unzip psmisc fail2ban cronie tree",
+            command:
+                "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER)} --non-interactive install vim ufw ncdu htop git pwgen curl unzip psmisc fail2ban cronie tree",
             userId: 0,
             environment: const {},
           ),
@@ -211,7 +218,8 @@ class AfterInstallationService {
       if (softwareManager == SOFTWARE_MANAGERS.DNF) {
         Linux.commandQueue.add(
           LinuxCommand(
-            command: "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF)} install vim-enhanced ufw ncdu htop git pwgen curl unzip psmisc fail2ban cronie tree -y",
+            command:
+                "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF)} install vim-enhanced ufw ncdu htop git pwgen curl unzip psmisc fail2ban cronie tree -y",
             userId: 0,
             environment: const {},
           ),
@@ -221,7 +229,8 @@ class AfterInstallationService {
       if (softwareManager == SOFTWARE_MANAGERS.PACMAN) {
         Linux.commandQueue.add(
           LinuxCommand(
-            command: "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN)} -S --needed --noconfirm vim ufw ncdu htop git pwgen curl unzip psmisc fail2ban cronie tree",
+            command:
+                "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN)} -S --needed --noconfirm vim ufw ncdu htop git pwgen curl unzip psmisc fail2ban cronie tree",
             userId: 0,
             environment: const {},
           ),
@@ -232,11 +241,13 @@ class AfterInstallationService {
   }
 
   static Future<void> removeTerminalTools() async {
-    for (SOFTWARE_MANAGERS softwareManager in Linux.currentenvironment.installedSoftwareManagers) {
+    for (SOFTWARE_MANAGERS softwareManager
+        in Linux.currentenvironment.installedSoftwareManagers) {
       if (softwareManager == SOFTWARE_MANAGERS.APT) {
         Linux.commandQueue.add(
           LinuxCommand(
-            command: "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.APT)} remove vim ufw ncdu htop git pwgen curl unzip psmisc fail2ban cron tree -y",
+            command:
+                "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.APT)} remove vim ufw ncdu htop git pwgen curl unzip psmisc fail2ban cron tree -y",
             userId: 0,
             environment: const {"DEBIAN_FRONTEND": "noninteractive"},
           ),
@@ -246,7 +257,8 @@ class AfterInstallationService {
       if (softwareManager == SOFTWARE_MANAGERS.ZYPPER) {
         Linux.commandQueue.add(
           LinuxCommand(
-            command: "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER)} --non-interactive remove vim ufw ncdu htop git pwgen curl unzip psmisc fail2ban cronie tree",
+            command:
+                "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER)} --non-interactive remove vim ufw ncdu htop git pwgen curl unzip psmisc fail2ban cronie tree",
             userId: 0,
             environment: const {},
           ),
@@ -256,7 +268,8 @@ class AfterInstallationService {
       if (softwareManager == SOFTWARE_MANAGERS.DNF) {
         Linux.commandQueue.add(
           LinuxCommand(
-            command: "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF)} remove vim-enhanced ufw ncdu htop git pwgen curl unzip psmisc fail2ban cronie tree -y",
+            command:
+                "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF)} remove vim-enhanced ufw ncdu htop git pwgen curl unzip psmisc fail2ban cronie tree -y",
             userId: 0,
             environment: const {},
           ),
@@ -266,7 +279,8 @@ class AfterInstallationService {
       if (softwareManager == SOFTWARE_MANAGERS.PACMAN) {
         Linux.commandQueue.add(
           LinuxCommand(
-            command: "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN)} -Rs --noconfirm vim ufw ncdu htop git pwgen curl unzip psmisc fail2ban cronie tree",
+            command:
+                "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN)} -Rs --noconfirm vim ufw ncdu htop git pwgen curl unzip psmisc fail2ban cronie tree",
             userId: 0,
             environment: const {},
           ),

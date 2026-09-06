@@ -235,8 +235,7 @@ class _SecurityCheckContentState extends State<SecurityCheckContent> {
 
     if (sshRunning) {
       findings.add(SecurityFinding(
-        severity:
-            fail2banRunning ? FindingSeverity.info : FindingSeverity.high,
+        severity: fail2banRunning ? FindingSeverity.info : FindingSeverity.high,
         title: l10n.sshFoundOnYourComputer,
         why: l10n.whySsh,
         command: "sudo ss -tlnp | grep ':22'",

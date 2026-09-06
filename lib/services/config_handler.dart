@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:linux_assistant/services/linux.dart';
+import 'package:linux_assistant/services/logger.dart';
 
 class ConfigHandler {
   /// handle IconLoader as a singleton
@@ -71,7 +72,7 @@ class ConfigHandler {
         configMap["config_initialized"] = true;
       }
     } catch (e) {
-      print("Error: Loading linux-assistant config failed: $e");
+      logError("Loading linux-assistant config failed", e);
     }
   }
 

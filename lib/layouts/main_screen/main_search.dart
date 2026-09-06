@@ -27,21 +27,22 @@ import 'package:window_manager/window_manager.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
 
 class MainSearch extends StatefulWidget {
-  late bool colorfulBackground;
+  final bool colorfulBackground;
 
   /// True when the search is a section of the hub rather than the whole window.
   final bool embedded;
 
-  MainSearch({super.key, this.embedded = false}) {
-    ConfigHandler configHandler = ConfigHandler();
-    // The gradient is a full-window launcher backdrop. Inside the hub it
-    // covers the content area only and fights with the surrounding chrome, so
-    // the section stays on the theme's own surface.
-    colorfulBackground = !embedded &&
-        configHandler.getValueUnsafe(
-          "colorfulBackground",
-          true,
-        );
+  MainSearch({super.key, this.embedded = false})
+      : colorfulBackground = _resolveColorfulBackground(embedded);
+
+  /// The gradient is a full-window launcher backdrop. Inside the hub it covers
+  /// the content area only and fights with the surrounding chrome, so the
+  /// section stays on the theme's own surface.
+  static bool _resolveColorfulBackground(bool embedded) {
+    if (embedded) {
+      return false;
+    }
+    return ConfigHandler().getValueUnsafe("colorfulBackground", true);
   }
 
   /// Set by the hub while it is on screen.
@@ -483,6 +484,9 @@ class _MainSearchState extends State<MainSearch> {
       results = [];
     } else {
       var entries = await ActionEntryListService.getEntries();
+      // The entry list is loaded asynchronously; the search field may be gone
+      // by the time it arrives, and everything below needs a live context.
+      if (!mounted) return;
       results = entries.where((actionEntry) {
         // If entry is openfolder: and show_folders is false, skip it
         if (actionEntry.action.startsWith("openfolder:") && !listFolders) {
@@ -772,7 +776,6 @@ class _MainSearchState extends State<MainSearch> {
     hotKeyManager.register(
       hotKeyDebug,
       keyDownHandler: (hotKey) async {
-        print("DEBUG");
         // insert here function calls to debug
         // Linux.getInstalledFlatpaks();
         // Linux.getInstalledSnaps();
@@ -785,7 +788,8 @@ class _MainSearchState extends State<MainSearch> {
     var entries = await ActionEntryListService.getEntries();
     // If the main search window is present and the user has not typed anything
     if (_foundEntries.isEmpty && entries.isNotEmpty) {
-      var proposals = entries.where((e) => !e.excludeFromSearchProposal).toList();
+      var proposals =
+          entries.where((e) => !e.excludeFromSearchProposal).toList();
       if (proposals.isNotEmpty) {
         int random = Random().nextInt(proposals.length);
         if (mounted) {

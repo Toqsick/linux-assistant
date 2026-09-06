@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:linux_assistant/layouts/mint_y.dart';
 import 'package:linux_assistant/layouts/run_command_queue.dart';
@@ -7,9 +8,9 @@ import 'package:linux_assistant/widgets/system_icon.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
 
 class TimeshiftCleanWidget extends StatelessWidget {
-  late Widget routeAfterRemoval;
-  late String mountpoint;
-  TimeshiftCleanWidget(
+  final Widget routeAfterRemoval;
+  final String mountpoint;
+  const TimeshiftCleanWidget(
       {super.key, required this.routeAfterRemoval, this.mountpoint = "/"});
 
   @override
@@ -19,7 +20,7 @@ class TimeshiftCleanWidget extends StatelessWidget {
         future: timeshiftSnapshotsFuture,
         builder: (context, snapshot) {
           if (snapshot.hasData) {
-            List<String> timeshiftSnapshots = snapshot.data! as List<String>;
+            List<String> timeshiftSnapshots = snapshot.data!;
             if (timeshiftSnapshots.isEmpty) {
               return Text("No timeshift snapshots found");
             }
@@ -39,12 +40,12 @@ class TimeshiftCleanWidget extends StatelessWidget {
                           userId: 0,
                           command:
                               "timeshift --delete  --snapshot '$timeshiftSnapshot'"));
-                      Navigator.of(context).push(MaterialPageRoute(
+                      unawaited(Navigator.of(context).push(MaterialPageRoute(
                           builder: (context) => RunCommandQueue(
                                 title: AppLocalizations.of(context)!
                                     .cleaningDiskspace,
                                 route: routeAfterRemoval,
-                              )));
+                              ))));
                     },
                   ),
               ],

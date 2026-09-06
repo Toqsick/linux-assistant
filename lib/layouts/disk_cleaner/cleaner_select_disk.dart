@@ -22,7 +22,7 @@ class CleanerSelectDiskPage extends StatelessWidget {
           builder: ((context, snapshot) {
             List<Widget> cards = [];
             if (snapshot.hasData) {
-              for (var disk in snapshot.data! as List<DeviceInfo>) {
+              for (var disk in snapshot.data!) {
                 cards.add(MintYCardWithIconAndAction(
                   icon: SystemIcon(iconString: "disks"),
                   title: disk.mountPoint == "/"
@@ -51,10 +51,10 @@ class CleanerSelectDiskPage extends StatelessWidget {
                 ));
               }
               return MintYGrid(
-                children: cards,
                 padding: 10,
                 ratio: 1.3,
                 widgetSize: 300,
+                children: cards,
               );
             }
             return MintYProgressIndicatorCircle();

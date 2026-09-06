@@ -4,7 +4,8 @@ import 'package:linux_assistant/services/icon_loader.dart';
 import 'package:linux_assistant/services/linux.dart';
 
 class SystemIcon extends StatelessWidget {
-  const SystemIcon({super.key, 
+  const SystemIcon({
+    super.key,
     required this.iconString,
     this.iconSize = 100,
     this.spinner = true,

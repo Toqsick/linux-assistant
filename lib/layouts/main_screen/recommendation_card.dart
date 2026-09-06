@@ -6,7 +6,7 @@ import 'package:linux_assistant/services/action_handler.dart';
 import 'package:linux_assistant/services/config_handler.dart';
 
 class RecommendationCard extends StatelessWidget {
-  const RecommendationCard({Key? key}) : super(key: key);
+  const RecommendationCard({super.key});
 
   @override
   Widget build(BuildContext context) {

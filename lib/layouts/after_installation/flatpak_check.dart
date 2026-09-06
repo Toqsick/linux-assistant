@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:linux_assistant/enums/softwareManagers.dart';
 import 'package:linux_assistant/layouts/after_installation/automatic_configuration_entry.dart';
@@ -56,13 +57,14 @@ class AfterInstallationFlatpakCheck extends StatelessWidget {
             ),
             onPressed: () async {
               await Linux.setUpFlatpak();
-              Navigator.of(context).push(MaterialPageRoute(
+              if (!context.mounted) return;
+              unawaited(Navigator.of(context).push(MaterialPageRoute(
                   builder: ((context) => RunCommandQueue(
                         route: const AfterInstallationBrowserSelection(),
                         title: AppLocalizations.of(context)!.settingUpFlatpak,
                         message:
                             "${AppLocalizations.of(context)!.settingUpFlatpak}...",
-                      ))));
+                      )))));
             },
           )
         ],

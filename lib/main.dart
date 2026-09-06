@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,13 +16,14 @@ import 'package:linux_assistant/services/theme_controller.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
+import 'package:linux_assistant/services/logger.dart';
 
-String CURRENT_LINUX_ASSISTANT_VERSION = "";
+String currentLinuxAssistantVersion = "";
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await WindowManager.instance.ensureInitialized();
-  WindowManager.instance.setTitle("Linux Assistant");
+  unawaited(WindowManager.instance.setTitle("Linux Assistant"));
 
   // For hot reload, `unregisterAll()` needs to be called.
   await HotKeyManager.instance.unregisterAll();
@@ -37,8 +39,8 @@ void main() async {
     if (result.stderr.toString().isEmpty) {
       firstScreen = const StartScreen();
     }
-    print(result.stdout.toString());
-    print(result.stderr.toString());
+    logInfo(result.stdout.toString());
+    logInfo(result.stderr.toString());
   }
 
   // Normal startup if everything is fine.
@@ -51,7 +53,7 @@ void main() async {
     String versionFile = "${Linux.executableFolder}/version";
     if (await File(versionFile).exists()) {
       try {
-        CURRENT_LINUX_ASSISTANT_VERSION =
+        currentLinuxAssistantVersion =
             (await File(versionFile).readAsString()).trim();
       } catch (e) {
         // Do nothing.
@@ -98,7 +100,7 @@ class MyApp extends StatefulWidget {
       // greeter tells the user. Hardcoding meta meant the app grabbed Super+Q
       // on Zorin, Ubuntu and Pop!_OS while advertising Alt+Q.
       modifiers: [
-        Linux.get_hotkey_modifier() == "<Alt>"
+        Linux.getHotkeyModifier() == "<Alt>"
             ? HotKeyModifier.alt
             : HotKeyModifier.meta
       ],
@@ -200,8 +202,6 @@ class MyApp extends StatefulWidget {
         MintY.currentColor = const Color.fromARGB(255, 127, 63, 191);
         MintY.secondaryColor = const Color.fromARGB(255, 127, 127, 255);
         break;
-      default:
-        MintY.currentColor = Colors.blue;
     }
     _applyConfiguredColorOverrides();
   }

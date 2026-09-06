@@ -8,8 +8,7 @@ import 'package:linux_assistant/services/linux.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
 
 class AfterInstallationAutomaticConfigurationEntry extends StatelessWidget {
-  const AfterInstallationAutomaticConfigurationEntry({Key? key})
-      : super(key: key);
+  const AfterInstallationAutomaticConfigurationEntry({super.key});
 
   @override
   Widget build(BuildContext context) {

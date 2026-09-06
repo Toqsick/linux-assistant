@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:linux_assistant/services/linux.dart';
 
 class FeedbackService {
-  static Future<bool> send_feedback(
+  static Future<bool> sendFeedback(
       String message,
       List<ActionEntry> entries,
       String searchTerm,

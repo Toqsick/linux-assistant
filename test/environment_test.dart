@@ -31,7 +31,8 @@ void main() {
     });
 
     test("rhel derivatives land on Fedora", () {
-      expect(Linux.distroFromIdLike("almalinux", "rhel centos"), DISTROS.FEDORA);
+      expect(
+          Linux.distroFromIdLike("almalinux", "rhel centos"), DISTROS.FEDORA);
     });
 
     test("nothing recognisable keeps the documented Debian default", () {
@@ -62,12 +63,15 @@ void main() {
   });
 
   group("update version comparison", () {
-    setUp(() => CURRENT_LINUX_ASSISTANT_VERSION = "0.7.0");
+    setUp(() => currentLinuxAssistantVersion = "0.7.0");
 
     test("a higher version is offered", () {
-      expect(LinuxAssistantUpdater.isVersionGreaterThanCurrent("0.8.0"), isTrue);
-      expect(LinuxAssistantUpdater.isVersionGreaterThanCurrent("1.0.0"), isTrue);
-      expect(LinuxAssistantUpdater.isVersionGreaterThanCurrent("0.7.1"), isTrue);
+      expect(
+          LinuxAssistantUpdater.isVersionGreaterThanCurrent("0.8.0"), isTrue);
+      expect(
+          LinuxAssistantUpdater.isVersionGreaterThanCurrent("1.0.0"), isTrue);
+      expect(
+          LinuxAssistantUpdater.isVersionGreaterThanCurrent("0.7.1"), isTrue);
     });
 
     test("the same or an older version is not", () {

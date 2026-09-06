@@ -19,6 +19,7 @@ import 'package:linux_assistant/services/config_handler.dart';
 import 'package:linux_assistant/services/hashing.dart';
 import 'package:linux_assistant/services/main_search_loader.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
+import 'package:linux_assistant/services/logger.dart';
 
 class Linux {
   static Environment currentenvironment = Environment();
@@ -104,13 +105,13 @@ class Linux {
     // Debug only: the stats poller alone issues several commands every few
     // seconds, so an installed build would write to the journal forever.
     if (kDebugMode) {
-      print("Running linux command: $exec with arguments: $arguments");
+      logInfo("Running linux command: $exec with arguments: $arguments");
     }
     var result = await Process.run(exec, arguments,
         runInShell: runInShell, environment: environment);
     if (result.stderr is String && result.stderr.toString().isNotEmpty) {
       if (kDebugMode) {
-        print(result.stderr);
+        logError("$exec failed", result.stderr);
       }
       if (getErrorMessages) {
         String returnValue = result.stdout;
@@ -228,32 +229,33 @@ class Linux {
       BuildContext context, VoidCallback callback) async {
     bool doesWarpinatorExist = doesExecutableExist("warpinator");
     if (doesWarpinatorExist) {
-      runCommand("/usr/bin/warpinator");
+      unawaited(runCommand("/usr/bin/warpinator"));
       callback();
       return;
     } else {
-      Navigator.of(context).push(MaterialPageRoute(
+      unawaited(Navigator.of(context).push(MaterialPageRoute(
         builder: (context) => MintYLoadingPage(
           text: AppLocalizations.of(context)!.loading,
         ),
-      ));
+      )));
       doesWarpinatorExist =
           await isSpecificFlatpakInstalled("org.x.Warpinator");
       if (doesWarpinatorExist) {
-        runCommand("/usr/bin/flatpak run org.x.Warpinator");
+        unawaited(runCommand("/usr/bin/flatpak run org.x.Warpinator"));
         callback();
         return;
       }
     }
     // if no warpinator is installed at all:
     await installApplications(["org.x.Warpinator", "warpinator"]);
-    Navigator.of(context).push(MaterialPageRoute(
+    if (!context.mounted) return;
+    unawaited(Navigator.of(context).push(MaterialPageRoute(
       builder: (context) => RunCommandQueue(
           title: AppLocalizations.of(context)!.installX("Warpinator"),
           route: const MainSearchLoader(),
           message: AppLocalizations.of(context)!
               .installingXDescription("Warpinator")),
-    ));
+    )));
   }
 
   /// [callback] is used for clearing and reoading the search.
@@ -261,19 +263,20 @@ class Linux {
       BuildContext context, VoidCallback callback) async {
     bool doesAppExist = doesExecutableExist("hardinfo");
     if (doesAppExist) {
-      runCommand("/usr/bin/hardinfo");
+      unawaited(runCommand("/usr/bin/hardinfo"));
       callback();
       return;
     } else {
       // if app is not installed:
       await installApplications(["hardinfo"]);
-      Navigator.of(context).push(MaterialPageRoute(
+      if (!context.mounted) return;
+      unawaited(Navigator.of(context).push(MaterialPageRoute(
         builder: (context) => RunCommandQueue(
             title: AppLocalizations.of(context)!.installX("HardInfo"),
             route: const MainSearchLoader(),
             message: AppLocalizations.of(context)!
                 .installingXDescription("HardInfo")),
-      ));
+      )));
     }
   }
 
@@ -292,13 +295,14 @@ class Linux {
       if (currentenvironment.desktop == DESKTOPS.KDE) {
         await installApplications(["plasma-applet-redshift-control"]);
       }
-      Navigator.of(context).push(MaterialPageRoute(
+      if (!context.mounted) return;
+      unawaited(Navigator.of(context).push(MaterialPageRoute(
         builder: (context) => RunCommandQueue(
             title: AppLocalizations.of(context)!.installX("Redshift"),
             route: const MainSearchLoader(),
             message: AppLocalizations.of(context)!
                 .installingXDescription("Redshift")),
-      ));
+      )));
     }
   }
 
@@ -394,7 +398,6 @@ class Linux {
         if (softwareManager == SOFTWARE_MANAGERS.FLATPAK) {
           // Check, if package is available:
           String repo = await isFlatpakAvailable(appCode);
-          print("Repo: $repo");
           if (repo == "") {
             continue;
           }
@@ -492,7 +495,6 @@ class Linux {
   /// If you don't specify the softwareManager it will be tried to remove the application with all Software Managers
   static Future<void> removeApplications(List<String> appCodes,
       {SOFTWARE_MANAGERS? softwareManager}) async {
-    print(appCodes);
     for (String appCode in appCodes) {
       if (softwareManager == null || softwareManager == SOFTWARE_MANAGERS.APT) {
         // Deb Package
@@ -577,7 +579,6 @@ class Linux {
       if (softwareManager == null ||
           softwareManager == SOFTWARE_MANAGERS.FLATPAK) {
         bool isFlatpakInstalled = await isSpecificFlatpakInstalled(appCode);
-        print(isFlatpakInstalled);
         if ((softwareManager == null ||
                 softwareManager == SOFTWARE_MANAGERS.FLATPAK) &&
             isFlatpakInstalled) {
@@ -812,7 +813,10 @@ class Linux {
 
     await Linux.runCommandWithCustomArguments(
       "bash",
-      ["-c", "find '${home.replaceAll("'", r"'\''")}' -maxdepth $depth -type d"],
+      [
+        "-c",
+        "find '${home.replaceAll("'", r"'\''")}' -maxdepth $depth -type d"
+      ],
       environment: {"PWD": "/"},
     ).then((value) {
       folders =
@@ -1094,8 +1098,6 @@ class Linux {
         return "/usr/bin/dnf";
       case SOFTWARE_MANAGERS.PACMAN:
         return "/usr/bin/pacman";
-      default:
-        return "";
     }
   }
 
@@ -1124,7 +1126,7 @@ class Linux {
   }
 
   /// Only adds commands to the command queue
-  static void installMultimediaCodecs() async {
+  static Future<void> installMultimediaCodecs() async {
     switch (currentenvironment.distribution) {
       case DISTROS.DEBIAN:
       case DISTROS.MXLINUX:
@@ -1230,7 +1232,6 @@ class Linux {
               "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN)} -S --needed --noconfirm vlc gstreamer libdvdcss libdvdread libdvdnav ffmpeg gst-plugins-base gst-plugins-good gst-plugins-bad gst-plugins-ugly",
         ));
         break;
-      default:
     }
   }
 
@@ -1256,7 +1257,7 @@ class Linux {
 
     commandList.addAll(arguments);
 
-    print("Run python script: $executable $commandList");
+    logInfo("Run python script: $executable $commandList");
 
     return runCommandWithCustomArguments(executable, commandList,
         getErrorMessages: getErrorMessages, environment: Platform.environment);
@@ -1288,7 +1289,7 @@ class Linux {
       await updateAllPackages();
     }
     if (installMultimediaCodecs_) {
-      installMultimediaCodecs();
+      await installMultimediaCodecs();
     }
     if (setupAutomaticSnapshots) {
       await enableAutomaticSnapshots();
@@ -1432,9 +1433,7 @@ class Linux {
     for (String e in list) {
       String fileName = e.split("/").last;
       ActionEntry actionEntry = ActionEntry(
-          name: fileName,
-          description: "$openLabel $e",
-          action: "openfile:$e");
+          name: fileName, description: "$openLabel $e", action: "openfile:$e");
       actionEntry.priority = -5;
       actionEntries.add(actionEntry);
     }
@@ -1463,7 +1462,9 @@ class Linux {
 
     String filepath = '$homeFolder/.cache/linux_assistant_commands';
     File file = File(filepath);
-    file.writeAsString(string);
+    // Awaited: the root helper re-hashes this file, and racing the write is
+    // what produced the sporadic "Checksum test failed!".
+    await file.writeAsString(string);
 
     String output = await runPythonScript("run_multiple_commands.py",
         arguments: ["--md5=$checksum", "--path=$filepath"], root: true);
@@ -1493,6 +1494,12 @@ class Linux {
 
     // Cancel search, if too many search results.
     if (lines.length > 100) {
+      return [];
+    }
+
+    // The apt search runs a Python subprocess; the search field that asked for
+    // these entries can be gone by the time they arrive.
+    if (!context.mounted) {
       return [];
     }
 
@@ -1537,9 +1544,9 @@ class Linux {
     List<ActionEntry> results = [];
     for (String line in lines) {
       // Get the only the first word of the line (with regex), not with .split(" ")
-      String snap_name = line.split(" ")[0];
+      String snapName = line.split(" ")[0];
       // print the Unicode code point of every single character
-      if (snap_name.trim() == "") {
+      if (snapName.trim() == "") {
         continue;
       }
       results.add(ActionEntry(
@@ -1548,9 +1555,9 @@ class Linux {
           size: 48,
           color: MintY.currentColor,
         ),
-        name: "Install $snap_name",
+        name: "Install $snapName",
         description: "Install via snap",
-        action: "snap-install:$snap_name",
+        action: "snap-install:$snapName",
         priority: -21,
       ));
     }
@@ -1571,9 +1578,6 @@ class Linux {
     if (output.contains("No matches found")) {
       return [];
     }
-
-    print(output);
-    print(lines.length);
 
     if (lines.length > 100) {
       return [];
@@ -1952,7 +1956,7 @@ class Linux {
         await installedZypperPackagesFuture;
     for (List<String> zypperEntry in installedZypperPackages) {
       if (zypperEntry.length < 2) {
-        print("Wrong zypper entry: $zypperEntry");
+        logInfo("Wrong zypper entry: $zypperEntry");
         continue;
       }
       returnValue.add(
@@ -1974,8 +1978,8 @@ class Linux {
     /// DNF
     List<List<String>> installedDNFPackages = await installedDNFPackagesFuture;
     for (List<String> dnfEntry in installedDNFPackages) {
-      if (dnfEntry.length < 1) {
-        print("Wrong dnf entry: $dnfEntry");
+      if (dnfEntry.isEmpty) {
+        logInfo("Wrong dnf entry: $dnfEntry");
         continue;
       }
       returnValue.add(
@@ -2019,7 +2023,7 @@ class Linux {
     /// flatpak entry: app-id, app name, description
     for (List<String> flatpakEntry in installedFlatpaks) {
       if (flatpakEntry.length < 3) {
-        print("Wrong flatpak entry: $flatpakEntry");
+        logInfo("Wrong flatpak entry: $flatpakEntry");
         continue;
       }
       returnValue.add(
@@ -2198,20 +2202,18 @@ class Linux {
         } else {
           return false;
         }
-      default:
-        return false;
     }
   }
 
   static void activateSystemHotkeyForLinuxAssistant() {
-    if (get_hotkey_modifier() == "<Alt>") {
+    if (getHotkeyModifier() == "<Alt>") {
       Linux.runPythonScript("setup_keybinding.py", arguments: ["--alt"]);
     } else {
       Linux.runPythonScript("setup_keybinding.py");
     }
   }
 
-  static String get_hotkey_modifier() {
+  static String getHotkeyModifier() {
     if (currentenvironment.desktop == DESKTOPS.KDE) {
       return "<Alt>";
     }
@@ -2254,46 +2256,48 @@ class Linux {
 
   /// removes all rights for others at the home folder
   static Future<void> fixHomeFolderPermissions() async {
-    runCommandWithCustomArguments(
+    unawaited(runCommandWithCustomArguments(
       "/usr/bin/chmod",
       ["o-rwx", Linux.getHomeDirectory()],
-    );
-    runCommandWithCustomArguments(
+    ));
+    unawaited(runCommandWithCustomArguments(
       "/usr/bin/chmod",
       ["g-w", Linux.getHomeDirectory()],
-    );
+    ));
   }
 
   static Future<void> openAdditionalSoftwareSourcesSettings() async {
     if (File("/usr/bin/software-properties-gtk").existsSync()) {
-      runCommand("/usr/bin/software-properties-gtk");
+      unawaited(runCommand("/usr/bin/software-properties-gtk"));
       return;
     }
     switch (currentenvironment.distribution) {
       case DISTROS.UBUNTU:
       case DISTROS.ZORINOS:
-        runCommand("/usr/bin/software-properties-gtk");
+        unawaited(runCommand("/usr/bin/software-properties-gtk"));
         break;
       case DISTROS.LINUX_MINT:
       case DISTROS.LMDE:
-        runCommandWithCustomArguments("/usr/bin/pkexec", ["mintsources"]);
+        unawaited(
+            runCommandWithCustomArguments("/usr/bin/pkexec", ["mintsources"]));
         break;
       case DISTROS.OPENSUSE:
-        runCommandWithCustomArguments(
-            "xdg-su", ["-c", "/sbin/yast2 repositories"]);
+        unawaited(runCommandWithCustomArguments(
+            "xdg-su", ["-c", "/sbin/yast2 repositories"]));
         break;
       case DISTROS.MXLINUX:
-        runCommand("/usr/bin/mx-repo-manager");
+        unawaited(runCommand("/usr/bin/mx-repo-manager"));
         break;
       case DISTROS.KDENEON:
-        runCommand("/usr/bin/plasma-discover");
+        unawaited(runCommand("/usr/bin/plasma-discover"));
         break;
       case DISTROS.DEBIAN:
       case DISTROS.POPOS:
-        runCommandWithCustomArguments("xdg-open", ["/etc/apt/sources.list.d/"]);
+        unawaited(runCommandWithCustomArguments(
+            "xdg-open", ["/etc/apt/sources.list.d/"]));
         break;
       case DISTROS.FEDORA:
-        runCommand("gnome-software");
+        unawaited(runCommand("gnome-software"));
         break;
       default:
     }
@@ -2310,12 +2314,14 @@ class Linux {
         int.parse(mode[2]) % 2 != 0;
   }
 
-  static void runExecutableInTerminal(String executablePath) async {
+  static Future<void> runExecutableInTerminal(String executablePath) async {
     String term = await Linux.runPythonScript("get_terminal_emulator.py");
     if ((term = term.trim()) == "gnome-terminal") {
-      Linux.runCommandWithCustomArguments(term, ["--", executablePath]);
+      unawaited(
+          Linux.runCommandWithCustomArguments(term, ["--", executablePath]));
     } else {
-      Linux.runCommandWithCustomArguments(term, ["-e", executablePath]);
+      unawaited(
+          Linux.runCommandWithCustomArguments(term, ["-e", executablePath]));
     }
   }
 
@@ -2542,11 +2548,11 @@ class Linux {
           userId: 0,
           command: "/usr/bin/systemctl enable firewalld --now",
         ));
-        Navigator.of(context).push(MaterialPageRoute(
+        unawaited(Navigator.of(context).push(MaterialPageRoute(
             builder: (context) => RunCommandQueue(
                   title: AppLocalizations.of(context)!.cleanDiskspace,
                   route: route,
-                )));
+                ))));
         break;
       default:
         await installApplications(["gufw"]);
@@ -2556,11 +2562,11 @@ class Linux {
           environment: {"PATH": getPATH()},
         ));
     }
-    Navigator.of(context).push(MaterialPageRoute(
+    unawaited(Navigator.of(context).push(MaterialPageRoute(
         builder: (context) => RunCommandQueue(
               title: AppLocalizations.of(context)!.settingUpFirewall,
               route: route,
-            )));
+            ))));
   }
 
   static String getPATH() {
@@ -2637,30 +2643,36 @@ class Linux {
     String tempFile = "$cacheDir/temp_command.sh";
     File(tempFile).writeAsStringSync(command);
 
-    print("Opening command in terminal: $command");
+    logInfo("Opening command in terminal: $command");
+
+    // Ordered by desktop preference, with xterm as the last resort. The
+    // previous version dispatched on the desktop alone and only reached the
+    // xterm fallback through a `default:` clause that the exhaustive DESKTOPS
+    // enum made unreachable — so a KDE box without konsole simply did nothing.
+    final List<List<String>> candidates = [];
     switch (currentenvironment.desktop) {
       case DESKTOPS.KDE:
-        runCommandWithCustomArguments("konsole", ["-e" "bash", "-c", command]);
+        candidates.add(["konsole", "-e", "bash", "-c", command]);
         break;
       case DESKTOPS.GNOME:
       case DESKTOPS.CINNAMON:
-        if (File("/usr/bin/kgx").existsSync()) {
-          runCommandWithCustomArguments("kgx", ["-e", "bash", "-c", command]);
-        } else if (File("/usr/bin/gnome-terminal").existsSync()) {
-          runCommandWithCustomArguments(
-              "gnome-terminal", ["--", "bash", "-c", command]);
-        }
+        candidates.add(["kgx", "-e", "bash", "-c", command]);
+        candidates.add(["gnome-terminal", "--", "bash", "-c", command]);
         break;
       case DESKTOPS.XFCE:
-        runCommandWithCustomArguments(
-            "xfce4-terminal", ["-e", "bash $cacheDir/temp_command.sh"]);
+        candidates.add(["xfce4-terminal", "-e", "bash $tempFile"]);
         break;
-      default:
-        // Xterm
-        if (File("/usr/bin/xterm").existsSync()) {
-          runCommandWithCustomArguments("xterm", ["-e", "bash", "-c", command]);
-        }
     }
+    candidates.add(["xterm", "-e", "bash", "-c", command]);
+
+    for (final List<String> candidate in candidates) {
+      final String executable = candidate.first;
+      if (File("/usr/bin/$executable").existsSync()) {
+        runCommandWithCustomArguments(executable, candidate.sublist(1));
+        return;
+      }
+    }
+    logError("No known terminal emulator found to run: $command");
   }
 
   static void setupSnapAndSnapStore(context) {
@@ -2781,34 +2793,34 @@ class Linux {
     switch (currentenvironment.distribution) {
       case DISTROS.LINUX_MINT:
       case DISTROS.LMDE:
-        runCommand("/usr/bin/mintinstall");
+        unawaited(runCommand("/usr/bin/mintinstall"));
         break;
       case DISTROS.UBUNTU:
       case DISTROS.ZORINOS:
       case DISTROS.POPOS:
-        runCommand("/usr/bin/gnome-software");
+        unawaited(runCommand("/usr/bin/gnome-software"));
         break;
       case DISTROS.FEDORA:
-        runCommand("/usr/bin/gnome-software");
+        unawaited(runCommand("/usr/bin/gnome-software"));
         break;
       case DISTROS.OPENSUSE:
         if (currentenvironment.desktop == DESKTOPS.KDE) {
-          runCommand("/usr/bin/plasma-discover");
+          unawaited(runCommand("/usr/bin/plasma-discover"));
         } else {
-          runCommand("/usr/bin/gnome-software");
+          unawaited(runCommand("/usr/bin/gnome-software"));
         }
         break;
       case DISTROS.MXLINUX:
-        runCommand("/usr/bin/mx-packageinstaller");
+        unawaited(runCommand("/usr/bin/mx-packageinstaller"));
         break;
       case DISTROS.KDENEON:
-        runCommand("/usr/bin/plasma-discover");
+        unawaited(runCommand("/usr/bin/plasma-discover"));
         break;
       case DISTROS.DEBIAN:
-        runCommand("/usr/bin/synaptic");
+        unawaited(runCommand("/usr/bin/synaptic"));
         break;
       default:
-        runCommand("/usr/bin/gnome-software");
+        unawaited(runCommand("/usr/bin/gnome-software"));
     }
   }
 
@@ -2874,27 +2886,27 @@ class Linux {
 
   static void ensureGrubSettings(context, bool grubVisible, bool enableBigFont,
       int timeout, bool startLastBootedOne) {
-    String grub_timeout_style = grubVisible ? "menu" : "hidden";
-    String grub_timeout = timeout.toString();
-    String grub_default = startLastBootedOne ? "saved" : "0";
-    String grub_save_default = startLastBootedOne ? "true" : "false";
-    String grub_gfxmode = enableBigFont ? "640x480" : "";
+    String grubTimeoutStyle = grubVisible ? "menu" : "hidden";
+    String grubTimeout = timeout.toString();
+    String grubDefault = startLastBootedOne ? "saved" : "0";
+    String grubSaveDefault = startLastBootedOne ? "true" : "false";
+    String grubGfxmode = enableBigFont ? "640x480" : "";
 
-    if (grub_timeout_style == "menu" && timeout < 1) {
-      grub_timeout = "1";
+    if (grubTimeoutStyle == "menu" && timeout < 1) {
+      grubTimeout = "1";
     }
 
-    if (grub_timeout_style == "hidden" && timeout < 0) {
-      grub_timeout = "0";
+    if (grubTimeoutStyle == "hidden" && timeout < 0) {
+      grubTimeout = "0";
     }
 
     ensureOptionInConfigFile(
-        "GRUB_TIMEOUT_STYLE", grub_timeout_style, "/etc/default/grub");
-    ensureOptionInConfigFile("GRUB_TIMEOUT", grub_timeout, "/etc/default/grub");
-    ensureOptionInConfigFile("GRUB_DEFAULT", grub_default, "/etc/default/grub");
+        "GRUB_TIMEOUT_STYLE", grubTimeoutStyle, "/etc/default/grub");
+    ensureOptionInConfigFile("GRUB_TIMEOUT", grubTimeout, "/etc/default/grub");
+    ensureOptionInConfigFile("GRUB_DEFAULT", grubDefault, "/etc/default/grub");
     ensureOptionInConfigFile(
-        "GRUB_SAVEDEFAULT", grub_save_default, "/etc/default/grub");
-    ensureOptionInConfigFile("GRUB_GFXMODE", grub_gfxmode, "/etc/default/grub");
+        "GRUB_SAVEDEFAULT", grubSaveDefault, "/etc/default/grub");
+    ensureOptionInConfigFile("GRUB_GFXMODE", grubGfxmode, "/etc/default/grub");
 
     if (currentenvironment.distribution != DISTROS.FEDORA) {
       commandQueue.add(LinuxCommand(

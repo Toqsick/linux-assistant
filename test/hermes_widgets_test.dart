@@ -1,5 +1,6 @@
+import 'dart:ui' show Tristate;
+
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
@@ -15,7 +16,8 @@ import 'package:linux_assistant/widgets/hermes/hermes_sparkline.dart';
 import 'package:linux_assistant/widgets/hermes/hermes_stat_tile.dart';
 
 /// Wraps a widget in the app's real theme and localizations.
-Widget _host(Widget child, {bool dark = false, Size size = const Size(900, 700)}) {
+Widget _host(Widget child,
+    {bool dark = false, Size size = const Size(900, 700)}) {
   return MaterialApp(
     theme: dark ? MintY.themeDark() : MintY.theme(),
     localizationsDelegates: const [
@@ -153,7 +155,7 @@ void main() {
 
       expect(find.text("Dashboard"), findsOneWidget);
       final semantics = tester.getSemantics(find.byType(HermesNavItem));
-      expect(semantics.hasFlag(SemanticsFlag.isSelected), isTrue);
+      expect(semantics.flagsCollection.isSelected, Tristate.isTrue);
     });
 
     testWidgets("hides the label when collapsed", (tester) async {
@@ -181,10 +183,14 @@ void main() {
           size: Size(width, 700),
         ));
         await tester.pump();
-        return tester.getSize(find.ancestor(
-          of: find.text("tile0"),
-          matching: find.byType(SizedBox),
-        ).first).width;
+        return tester
+            .getSize(find
+                .ancestor(
+                  of: find.text("tile0"),
+                  matching: find.byType(SizedBox),
+                )
+                .first)
+            .width;
       }
 
       final narrow = await tileWidthAt(300);

@@ -19,6 +19,29 @@ out what `apt` cannot replace on its own. Run it as your normal user; it calls
 your account rather than root's. See [Uninstall](#uninstall) for doing it by
 hand.
 
+## Keyboard shortcut
+
+Linux Assistant registers a global hotkey that brings the launcher to the
+foreground. The default is `Super+Q`, except on **KDE**, **Pop!_OS**, **Ubuntu**
+and **Zorin OS**, where the desktop convention is `Alt+Q` and the app follows
+it. `lib/services/linux.dart` (`get_hotkey_modifier()`) is the source of truth.
+
+Two registration paths exist and the app picks one at startup based on the
+session type:
+
+- **X11 sessions** — the app grabs the key itself via libkeybinder. The grab
+  uses the modifier above, so what the greeter tells the user matches what is
+  actually grabbed.
+- **Wayland sessions** — there is no global X11 grab, so the libkeybinder call
+  is skipped (it used to log `Binding '<Meta>q' failed!` on every start) and
+  the desktop's own gsettings shortcut is registered instead, through
+  `additional/python/setup_keybinding.py`. The entry is written once and
+  reused — the script looks for an entry whose `command` is `linux-assistant`
+  before adding a new one, so repeated starts no longer pile up duplicates.
+
+See [Uninstall](#uninstall) for how to remove the shortcut, which lives in the
+desktop's settings rather than in the package.
+
 ## Requirements
 
 To build:
@@ -28,7 +51,19 @@ sudo apt install libkeybinder-3.0-0 libkeybinder-3.0-dev wmctrl
 ```
 
 To run an installed package, only the runtime libraries are needed — the `.deb`
-declares them, so `apt` pulls them in for you.
+declares them, so `apt` pulls them in for you. The declared runtime set is
+`libgtk-3-0, libkeybinder-3.0-0, wmctrl, wget, python3, python3-gi,
+gir1.2-gtk-3.0, python3-apt, mesa-utils, pkexec | policykit-1` (see
+`deb/DEBIAN/control`).
+
+If you build with `flutter build linux` and run the bundle directly (Option 1
+under [Build](#build)), `apt` does not install those packages for you. The
+Python helpers need GObject introspection, so install them by hand first:
+
+```bash
+sudo apt install libgtk-3-0 libkeybinder-3.0-0 wmctrl wget python3 python3-gi \
+     gir1.2-gtk-3.0 python3-apt mesa-utils policykit-1
+```
 
 ## Build
 
@@ -38,6 +73,15 @@ sudo rm /etc/apt/preferences.d/nosnap.pref # (For Linux Mint)
 sudo apt install snapd git
 sudo snap install flutter --classic
 flutter doctor # If command not found: Reboot and try again
+```
+
+The project requires **Dart ≥ 3.4** and **Flutter ≥ 3.27** (see `pubspec.yaml`
+`environment:`). The Flutter snap's stable channel tracks recent releases; if
+`flutter build linux` fails with errors that point nowhere near the cause (the
+trigger is `Color.withValues(alpha:)` in the Hermes widgets), check
+`flutter --version` and switch to a newer channel if needed.
+
+```bash
 git clone https://github.com/Jean28518/linux-assistant.git
 cd linux-assistant
 
@@ -51,6 +95,10 @@ cd build/linux/x64/release/bundle/
 # Option 2: Build .deb and install .deb package:
 bash ./build-deb.sh
 sudo apt install ./linux-assistant_*_amd64.deb
+# build-deb.sh produces linux-assistant_<version>_<arch>.deb and also
+# copies it to the legacy name linux-assistant.deb for the in-app updater.
+# The build no longer mutates the tracked deb/DEBIAN/control in place —
+# Version and Installed-Size are stamped into a staging dir under build/.
 
 # Option 3: Build .rpm package:
 bash ./build-rpm.sh

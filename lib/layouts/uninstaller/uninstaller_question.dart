@@ -8,8 +8,8 @@ import 'package:linux_assistant/services/main_search_loader.dart';
 /// Don't needed to called on Snap or Flatpak.
 /// Should only be asked at potential danger uninstall like on apt or zypper
 class UninstallerQuestion extends StatelessWidget {
-  String action;
-  UninstallerQuestion({super.key, required this.action});
+  final String action;
+  const UninstallerQuestion({super.key, required this.action});
 
   @override
   Widget build(BuildContext context) {

@@ -56,7 +56,7 @@ List<ActionEntry> getBasicEntries(BuildContext context) {
     ActionEntry(
       name: AppLocalizations.of(context)!.linuxAssistantKeyboardShortcut,
       description: AppLocalizations.of(context)!
-          .setUpLinuxAssistantKeyboardShortcut(Linux.get_hotkey_modifier()),
+          .setUpLinuxAssistantKeyboardShortcut(Linux.getHotkeyModifier()),
       action: "setup_linux_assistant_shortcut",
       iconWidget: Icon(
         Icons.keyboard,
@@ -158,8 +158,8 @@ List<ActionEntry> getBasicEntries(BuildContext context) {
     ActionEntry(
       name: AppLocalizations.of(context)!.versionOfLinuxAssistant,
       description: Linux.currentenvironment.runningInFlatpak
-          ? "v$CURRENT_LINUX_ASSISTANT_VERSION (Flatpak)"
-          : "v$CURRENT_LINUX_ASSISTANT_VERSION",
+          ? "v$currentLinuxAssistantVersion (Flatpak)"
+          : "v$currentLinuxAssistantVersion",
       action: "just_callback",
       iconWidget: Icon(
         Icons.info_rounded,

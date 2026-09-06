@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:linux_assistant/layouts/mint_y.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
@@ -145,8 +146,8 @@ class _PowerModeState extends State<PowerMode> {
                                     : Colors.black54,
                                 onPressed: () async {
                                   if (!snapshot.data!["performance"]) {
-                                    Linux.runCommand(
-                                        "powerprofilesctl set performance");
+                                    unawaited(Linux.runCommand(
+                                        "powerprofilesctl set performance"));
                                     setState(() {});
                                   }
                                 },
