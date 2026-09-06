@@ -2223,7 +2223,9 @@ class Linux {
       case DISTROS.UBUNTU:
         return "<Alt>";
       default:
-        return "<Super/Windows> ";
+        // No trailing space: every caller interpolates this into "{modifier}
+        // + <Q>", so the old value rendered a double space.
+        return "<Super/Windows>";
     }
   }
 

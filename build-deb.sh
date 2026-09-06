@@ -35,14 +35,13 @@ cp linux-assistant.sh "$STAGE/usr/bin/linux-assistant"
 chmod +x "$STAGE/usr/bin/linux-assistant"
 chmod 755 "$STAGE/DEBIAN"
 
-# Estimate the installed size by summing the sizes of all files in the package
+# Version and Installed-Size are generated, not tracked. The checked-in
+# control file used to carry both, and both went stale: the committed Version
+# was whatever the last release happened to be, and Installed-Size was whatever
+# the last local build measured.
 SIZE=$(du -s "$STAGE" | cut -f1)
-sed -i "s/^Installed-Size: .*/Installed-Size: $SIZE/" "$STAGE/DEBIAN/control"
-
-# Match by field name, not by line number: the previous "2s/.*/..." overwrote
-# whatever happened to be on line two, so reordering control silently
-# destroyed a field.
-sed -i "s/^Version: .*/Version: $VERSION/" "$STAGE/DEBIAN/control"
+sed -i "/^Description:/i Version: $VERSION\nInstalled-Size: $SIZE" \
+  "$STAGE/DEBIAN/control"
 
 # Build deb package
 dpkg-deb --build -Zxz --root-owner-group "$STAGE"

@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:linux_assistant/enums/desktops.dart';
 import 'package:linux_assistant/enums/distros.dart';
 import 'package:linux_assistant/main.dart';
+import 'package:linux_assistant/models/environment.dart';
 import 'package:linux_assistant/services/linux.dart';
 import 'package:linux_assistant/services/updater.dart';
 
@@ -98,6 +99,45 @@ void main() {
       expect(
           LinuxAssistantUpdater.isVersionGreaterThanCurrent("latest"), isFalse);
       expect(LinuxAssistantUpdater.isVersionGreaterThanCurrent(""), isFalse);
+    });
+  });
+
+  group("hotkey modifier", () {
+    setUp(() {
+      Linux.currentenvironment = Environment();
+      Linux.currentenvironment.desktop = DESKTOPS.GNOME;
+      Linux.currentenvironment.distribution = DISTROS.FEDORA;
+    });
+
+    test("KDE uses Alt regardless of the distribution", () {
+      Linux.currentenvironment.desktop = DESKTOPS.KDE;
+      Linux.currentenvironment.distribution = DISTROS.FEDORA;
+
+      expect(Linux.getHotkeyModifier(), "<Alt>");
+    });
+
+    test("distributions that bind Super themselves get Alt", () {
+      // GNOME's own Super+Q / overview bindings collide, so these ship Alt.
+      for (final DISTROS distro in [
+        DISTROS.ZORINOS,
+        DISTROS.UBUNTU,
+        DISTROS.POPOS,
+      ]) {
+        Linux.currentenvironment.distribution = distro;
+        expect(Linux.getHotkeyModifier(), "<Alt>", reason: "$distro");
+      }
+    });
+
+    test("everything else gets Super", () {
+      Linux.currentenvironment.distribution = DISTROS.DEBIAN;
+      expect(Linux.getHotkeyModifier(), "<Super/Windows>");
+    });
+
+    test("the modifier carries no padding", () {
+      // The callers interpolate it into "{modifier} + <Q>"; a trailing space
+      // rendered as a double space there.
+      Linux.currentenvironment.distribution = DISTROS.DEBIAN;
+      expect(Linux.getHotkeyModifier().trim(), Linux.getHotkeyModifier());
     });
   });
 }
