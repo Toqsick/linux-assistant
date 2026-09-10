@@ -1141,4 +1141,12 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get deleteSnapshotWarning =>
       'Das lässt sich nicht rückgängig machen. Wenn es der einzige Schnappschuss ist, gibt es danach nichts mehr, worauf zurückgesetzt werden kann.';
+
+  @override
+  String get securityCheckScriptErrorTitle =>
+      'Sicherheitsprüfung fehlgeschlagen';
+
+  @override
+  String get securityCheckScriptErrorBody =>
+      'Das Prüf-Skript ist abgestürzt, nachdem Root-Zugriff erteilt wurde. Das ist ein Bug in Linux Assistant, kein Rechte-Problem. Details für einen Fehlerbericht:';
 }

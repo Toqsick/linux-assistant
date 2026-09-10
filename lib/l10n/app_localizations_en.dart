@@ -1133,4 +1133,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get deleteSnapshotWarning =>
       'This cannot be undone. If this is the only snapshot, there is nothing left to roll back to.';
+
+  @override
+  String get securityCheckScriptErrorTitle => 'Security check failed';
+
+  @override
+  String get securityCheckScriptErrorBody =>
+      'The checker crashed after root access was granted. This is a bug in Linux Assistant, not a permissions problem. Details for a bug report:';
 }

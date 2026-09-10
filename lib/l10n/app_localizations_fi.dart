@@ -1143,4 +1143,11 @@ class AppLocalizationsFi extends AppLocalizations {
   @override
   String get deleteSnapshotWarning =>
       'Tätä ei voi perua. Jos tämä on ainoa tilannevedos, mitään palautettavaa ei jää.';
+
+  @override
+  String get securityCheckScriptErrorTitle => 'Tietoturvatarkistus epäonnistui';
+
+  @override
+  String get securityCheckScriptErrorBody =>
+      'Tarkistusskripti kaatui root-käyttöoikeuden myöntämisen jälkeen. Kyseessä on Linux Assistantin ohjelmavirhe, ei käyttöoikeusongelma. Yksityiskohdat virheraporttia varten:';
 }

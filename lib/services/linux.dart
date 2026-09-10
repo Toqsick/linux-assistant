@@ -1485,6 +1485,29 @@ class Linux {
         getErrorMessages: getErrorMessages, environment: Platform.environment);
   }
 
+  /// Same script and polkit action as [runPrivilegedPythonScript], but the
+  /// caller sees the exit code.
+  ///
+  /// pkexec exits 126 when the dialog is dismissed and 127 when authorization
+  /// is denied, while a checker that crashed after a successful authorization
+  /// exits with its own non-zero code. Without the exit code those two look
+  /// identical to the caller, which is how the security page ended up blaming
+  /// missing root rights for a script bug.
+  static Future<CommandResult> runPrivilegedPythonScriptDetailed(
+      String filename, List<String> arguments) async {
+    assert(_privilegedEntryPoints.contains(filename),
+        "$filename has no polkit action; add one before calling it as root");
+
+    final List<String> commandList = [
+      "$pythonScriptsFolder$filename",
+      ...arguments
+    ];
+
+    logInfo("Run privileged python script: pkexec $commandList");
+
+    return runProcess("pkexec", commandList, environment: Platform.environment);
+  }
+
   /// Restricted to the display class on purpose. A bare `lshw` probes PCI, USB,
   /// SCSI and DMI and routinely takes seconds; `-C display` answers the only
   /// question asked here and returns immediately.

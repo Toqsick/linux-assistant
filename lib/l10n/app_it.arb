@@ -1236,5 +1236,17 @@
     "placeholders": {},
     "description": "",
     "type": "text"
+  },
+  "securityCheckScriptErrorTitle": "Controllo di sicurezza non riuscito",
+  "@securityCheckScriptErrorTitle": {
+    "placeholders": {},
+    "description": "Shown when the checker script itself crashed",
+    "type": "text"
+  },
+  "securityCheckScriptErrorBody": "Lo script di controllo si è arrestato dopo la concessione dei privilegi di root. È un bug di Linux Assistant, non un problema di permessi. Dettagli per una segnalazione:",
+  "@securityCheckScriptErrorBody": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
   }
 }

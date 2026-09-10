@@ -1222,5 +1222,17 @@
     "placeholders": {},
     "description": "",
     "type": "text"
+  },
+  "securityCheckScriptErrorTitle": "Security check failed",
+  "@securityCheckScriptErrorTitle": {
+    "placeholders": {},
+    "description": "Shown when the checker script itself crashed",
+    "type": "text"
+  },
+  "securityCheckScriptErrorBody": "The checker crashed after root access was granted. This is a bug in Linux Assistant, not a permissions problem. Details for a bug report:",
+  "@securityCheckScriptErrorBody": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
   }
 }

@@ -1256,5 +1256,17 @@
     "placeholders": {},
     "description": "",
     "type": "text"
+  },
+  "securityCheckScriptErrorTitle": "Sicherheitsprüfung fehlgeschlagen",
+  "@securityCheckScriptErrorTitle": {
+    "placeholders": {},
+    "description": "Shown when the checker script itself crashed",
+    "type": "text"
+  },
+  "securityCheckScriptErrorBody": "Das Prüf-Skript ist abgestürzt, nachdem Root-Zugriff erteilt wurde. Das ist ein Bug in Linux Assistant, kein Rechte-Problem. Details für einen Fehlerbericht:",
+  "@securityCheckScriptErrorBody": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
   }
 }

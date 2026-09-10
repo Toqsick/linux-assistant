@@ -2075,6 +2075,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This cannot be undone. If this is the only snapshot, there is nothing left to roll back to.'**
   String get deleteSnapshotWarning;
+
+  /// Shown when the checker script itself crashed
+  ///
+  /// In en, this message translates to:
+  /// **'Security check failed'**
+  String get securityCheckScriptErrorTitle;
+
+  ///
+  ///
+  /// In en, this message translates to:
+  /// **'The checker crashed after root access was granted. This is a bug in Linux Assistant, not a permissions problem. Details for a bug report:'**
+  String get securityCheckScriptErrorBody;
 }
 
 class _AppLocalizationsDelegate

@@ -827,5 +827,17 @@
     "placeholders": {},
     "description": "",
     "type": "text"
+  },
+  "securityCheckScriptErrorTitle": "Tietoturvatarkistus epäonnistui",
+  "@securityCheckScriptErrorTitle": {
+    "placeholders": {},
+    "description": "Shown when the checker script itself crashed",
+    "type": "text"
+  },
+  "securityCheckScriptErrorBody": "Tarkistusskripti kaatui root-käyttöoikeuden myöntämisen jälkeen. Kyseessä on Linux Assistantin ohjelmavirhe, ei käyttöoikeusongelma. Yksityiskohdat virheraporttia varten:",
+  "@securityCheckScriptErrorBody": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
   }
 }
