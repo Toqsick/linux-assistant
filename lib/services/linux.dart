@@ -239,7 +239,10 @@ class Linux {
         runCommand("cinnamon-settings info");
         break;
       case DESKTOPS.GNOME:
-        runCommand("gnome-control-center info-overview");
+        // "info-overview" was renamed in GNOME 45; the old panel name silently
+        // opened nothing, which went unnoticed because the exit code was
+        // discarded.
+        runCommand("gnome-control-center system");
         break;
       case DESKTOPS.XFCE:
         runCommand("xfce4-about");
@@ -2454,12 +2457,25 @@ class Linux {
     }
   }
 
-  static void activateSystemHotkeyForLinuxAssistant() {
-    if (getHotkeyModifier() == "<Alt>") {
-      Linux.runPythonScript("setup_keybinding.py", arguments: ["--alt"]);
-    } else {
-      Linux.runPythonScript("setup_keybinding.py");
+  /// Registers the "bring me up" shortcut with the desktop.
+  ///
+  /// Returns whether the script reported success. It used to be `static void`
+  /// with the Future dropped on the floor, so a desktop the script does not
+  /// support — or a `gi` import that failed — looked exactly like success.
+  static Future<bool> activateSystemHotkeyForLinuxAssistant() async {
+    final CommandResult result = await runProcess(
+      "python3",
+      [
+        "${pythonScriptsFolder}setup_keybinding.py",
+        if (getHotkeyModifier() == "<Alt>") "--alt",
+      ],
+      environment: Platform.environment,
+    );
+
+    if (!result.success) {
+      logError("Registering the desktop shortcut failed", result.error);
     }
+    return result.success;
   }
 
   static String getHotkeyModifier() {

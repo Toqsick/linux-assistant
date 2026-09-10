@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:linux_assistant/layouts/greeter/start_after_installation.dart';
 import 'package:linux_assistant/layouts/mint_y.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
+import 'package:linux_assistant/services/config_handler.dart';
 import 'package:linux_assistant/services/linux.dart';
 
 class ActivateHotkeyQuestion extends StatelessWidget {
@@ -42,15 +43,18 @@ class ActivateHotkeyQuestion extends StatelessWidget {
           const SizedBox(
             width: 16,
           ),
-          MintYButtonNavigate(
+          MintYButtonNext(
             route: route,
-            text: Text(
-              AppLocalizations.of(context)!.yesSetUpHotkey,
-              style: MintY.heading4White,
-            ),
-            color: MintY.currentColor,
-            onPressed: () {
-              Linux.activateSystemHotkeyForLinuxAssistant();
+            // Awaited, and the result is shown. The button used to fire the
+            // registration and navigate away in the same frame, so a failure
+            // was invisible — and a second press queued a second run.
+            onPressedFuture: () async {
+              final bool ok =
+                  await Linux.activateSystemHotkeyForLinuxAssistant();
+              // Only remember it when it worked. main.dart skips the
+              // registration on later starts based on this flag, so writing
+              // it unconditionally would make a failed setup permanent.
+              await ConfigHandler().setValue("keybinding_registered", ok);
             },
           ),
         ],

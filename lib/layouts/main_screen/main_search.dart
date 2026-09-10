@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -425,16 +424,15 @@ class _MainSearchState extends State<MainSearch> {
       if (returnToHub != null) {
         // Running inside the hub: keep the window open and hand control back.
         returnToHub();
-      } else if (Linux.currentenvironment.wayland) {
-        /// On wayland sessions we currently can't issue 'wmctrl -a'
-        /// So if we want to get the hotkey working we need to close the app
-        /// after a single use. Because otherwise everytime the user presses
-        /// the hotkey an additional window would open.
-        /// On x11 sessions we don't have the issue.
-        windowManager.minimize();
-        Future.delayed(const Duration(seconds: 5), () => exit(0));
       } else {
-        windowManager.minimize();
+        // Just minimize, on both session types. This used to quit the whole
+        // app five seconds later on Wayland, because `wmctrl -a` cannot raise
+        // a window there and the next press of the shortcut would otherwise
+        // have opened a second one. SingleInstance now hands the shortcut to
+        // the window that is already running, so there is nothing to quit for
+        // — and the user keeps a warm process instead of paying the startup
+        // cost on every use.
+        unawaited(windowManager.minimize());
       }
     }
     _lastKeyword = "";

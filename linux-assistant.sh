@@ -29,8 +29,11 @@ if [[ "$1" == "-v" || "$1" == "--version" ]]; then
   exit 0
 fi
 
-if wmctrl -l | grep -q 'Linux Assistant'; then
-  wmctrl -a 'Linux Assistant'
-else
-  "$APP_DIR/linux-assistant"
-fi
+# Always start the binary. Whether a window already exists is decided inside
+# the app, over a socket in $XDG_RUNTIME_DIR: a second process hands the
+# request to the running one and exits.
+#
+# This used to be `wmctrl -l | grep -q 'Linux Assistant'`. wmctrl asks an X11
+# window manager, so on a Wayland session it listed nothing, the test always
+# failed, and every press of the shortcut opened another window.
+exec "$APP_DIR/linux-assistant" "$@"

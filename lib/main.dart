@@ -17,6 +17,7 @@ import 'package:window_manager/window_manager.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
 import 'package:linux_assistant/services/logger.dart';
+import 'package:linux_assistant/services/single_instance.dart';
 
 String currentLinuxAssistantVersion = "";
 
@@ -24,6 +25,13 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await WindowManager.instance.ensureInitialized();
   unawaited(WindowManager.instance.setTitle("Linux Assistant"));
+
+  // Second press of the shortcut: hand it to the window that is already open
+  // and stop here, instead of opening another one.
+  final bool isTheInstance = await SingleInstance.claim(onRaise: raiseWindow);
+  if (!isTheInstance) {
+    exit(0);
+  }
 
   // For hot reload, `unregisterAll()` needs to be called.
   await HotKeyManager.instance.unregisterAll();
@@ -67,6 +75,17 @@ void main() async {
   ));
 }
 
+/// Brings the existing window forward and puts the caret in the search box.
+///
+/// Called both by the in-app hotkey on X11 and by a second process that found
+/// the single-instance socket already taken.
+Future<void> raiseWindow() async {
+  await WindowManager.instance.restore();
+  await WindowManager.instance.show();
+  await WindowManager.instance.focus();
+  HubShell.onSearchRequested?.call();
+}
+
 class MyApp extends StatefulWidget {
   /// What the desktop environment reports, used when the user follows the
   /// system theme.
@@ -91,7 +110,7 @@ class MyApp extends StatefulWidget {
   /// and the desktop's own shortcut is the only route that carries.
   static void initHotkeyToShowUp() {
     if (Linux.currentenvironment.wayland) {
-      _ensureDesktopShortcut();
+      unawaited(_ensureDesktopShortcut());
       return;
     }
     HotKey hotKey = HotKey(
@@ -109,11 +128,11 @@ class MyApp extends StatefulWidget {
     hotKeyManager.register(
       hotKey,
       keyDownHandler: (hotKey) {
-        Linux.runCommandWithCustomArguments(
-            "wmctrl", ["-a", "Linux Assistant"]);
-        // Raising the window is only half the job when the hub is open: the
+        // The app raises itself rather than asking wmctrl to do it, which is
+        // one external dependency fewer and works the same on both session
+        // types. Raising is only half the job when the hub is open: the
         // hotkey is meant to land the user in the search box.
-        HubShell.onSearchRequested?.call();
+        unawaited(raiseWindow());
       },
     );
   }
@@ -125,15 +144,18 @@ class MyApp extends StatefulWidget {
   /// shortcuts, so the flag records that it happened. The script skips an
   /// entry it already owns as well, which covers the case where the app dies
   /// before the flag reaches disk.
-  static void _ensureDesktopShortcut() {
+  static Future<void> _ensureDesktopShortcut() async {
     final ConfigHandler configHandler = ConfigHandler();
     // Compared rather than used directly: the getter is untyped and the value
     // comes from a file the user can edit.
     if (configHandler.getValueUnsafe("keybinding_registered", false) == true) {
       return;
     }
-    Linux.activateSystemHotkeyForLinuxAssistant();
-    configHandler.setValue("keybinding_registered", true);
+    // Awaited, and only recorded when it worked. It used to fire and forget,
+    // then write the flag regardless — so a desktop the script cannot handle
+    // was marked as done and never retried.
+    final bool ok = await Linux.activateSystemHotkeyForLinuxAssistant();
+    await configHandler.setValue("keybinding_registered", ok);
   }
 
   /// Applies the accent colors for the current appearance.
