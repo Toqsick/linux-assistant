@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 
+import 'package:linux_assistant/layouts/main_screen/main_search.dart';
 import 'package:linux_assistant/layouts/mint_y.dart';
 import 'package:linux_assistant/models/linux_command.dart';
 import 'package:linux_assistant/services/config_handler.dart';
@@ -77,13 +78,28 @@ class _RunCommandQueueState extends State<RunCommandQueue> {
       if (!mounted || !_commandQueueCompleted) {
         return;
       }
-      Linux.clearCommandQueue();
+      _continueAfterQueue(context);
+    }));
+  }
+
+  /// Where "continue" leads once the queue has run.
+  ///
+  /// With the hub running underneath, pushing the usual fullscreen
+  /// [widget.route] stranded the user: that search cannot be dismissed (its
+  /// clear() hands control back to the hub below instead of popping) and its
+  /// loader wipes the embedded search's in-app hotkeys via unregisterAll.
+  /// Popping back to the hub is the correct "continue" there.
+  void _continueAfterQueue(BuildContext context) {
+    Linux.clearCommandQueue();
+    if (MainSearch.onDismiss != null) {
+      Navigator.of(context).pop();
+    } else {
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) => widget.route,
         ),
       );
-    }));
+    }
   }
 
   @override
@@ -225,11 +241,13 @@ class _RunCommandQueueState extends State<RunCommandQueue> {
                 const SizedBox(
                   width: 10,
                 ),
-                MintYButtonNext(
-                  route: widget.route,
-                  onPressed: () {
-                    Linux.clearCommandQueue();
-                  },
+                MintYButton(
+                  text: Text(
+                    AppLocalizations.of(context)!.next,
+                    style: MintY.heading4White,
+                  ),
+                  color: MintY.currentColor,
+                  onPressed: () => _continueAfterQueue(context),
                 ),
               ],
             ),

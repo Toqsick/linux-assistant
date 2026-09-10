@@ -4,7 +4,6 @@ import 'package:linux_assistant/layouts/mint_y.dart';
 import 'package:linux_assistant/layouts/settings/appearance_settings.dart';
 import 'package:linux_assistant/layouts/settings/environment_selection.dart';
 import 'package:linux_assistant/layouts/settings/search_settings.dart';
-import 'package:linux_assistant/services/main_search_loader.dart';
 
 class SettingsStart extends StatefulWidget {
   const SettingsStart({super.key});
@@ -78,13 +77,16 @@ class _SettingsStartState extends State<SettingsStart> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                MintYButtonNavigate(
+                // Always shown inside a Dialog: close means pop. The old
+                // MintYButtonNavigate pushed a fullscreen search on top of
+                // the still-open dialog — from the hub there was no way back.
+                MintYButton(
                   color: MintY.currentColor,
                   text: Text(
                     AppLocalizations.of(context)!.close,
                     style: MintY.heading4White,
                   ),
-                  route: const MainSearchLoader(),
+                  onPressed: () => Navigator.of(context).pop(),
                 )
               ],
             )
