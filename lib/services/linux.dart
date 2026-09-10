@@ -50,11 +50,16 @@ class Linux {
       // flatpak-spawn in front of every command.
       CommandHelper.runningInFlatpak = true;
 
-      // That python scripts are also running in flatpak we need to copy them to the home directory .cache folder
-      await runCommand("rm -r $homeFolder/.cache/linux-assistant");
-      await runCommand(
-          "cp -r $additionalFolder $homeFolder/.cache/linux-assistant",
-          hostOnFlatpak: false);
+      // That python scripts are also running in flatpak we need to copy them to the home directory .cache folder.
+      // Argument lists, not command strings: a home folder containing a
+      // space would split "rm -r /home/john doe/…" into two paths and
+      // recursively delete /home/john.
+      await runCommandWithCustomArguments(
+          "rm", ["-r", "$homeFolder/.cache/linux-assistant"],
+          runInShell: false);
+      await runCommandWithCustomArguments(
+          "cp", ["-r", additionalFolder, "$homeFolder/.cache/linux-assistant"],
+          hostOnFlatpak: false, runInShell: false);
       pythonScriptsFolder = "$homeFolder/.cache/linux-assistant/python/";
       additionalFolder = "$homeFolder/.cache/linux-assistant/";
     }
@@ -1462,8 +1467,15 @@ class Linux {
 
     logInfo("Run python script: python3 $commandList");
 
+    // No shell: arguments are --key=value pairs that must reach the script
+    // verbatim. The keyword search used to hand-shell-quote its argument,
+    // which a keyword containing a single quote unwound into command
+    // execution. expandCommand yields an absolute python3 path, which is
+    // the documented precondition for turning the shell off.
     return runCommandWithCustomArguments("python3", commandList,
-        getErrorMessages: getErrorMessages, environment: Platform.environment);
+        getErrorMessages: getErrorMessages,
+        environment: Platform.environment,
+        runInShell: false);
   }
 
   /// Runs one of the [_privilegedEntryPoints] as root through pkexec.
@@ -1481,8 +1493,16 @@ class Linux {
 
     logInfo("Run privileged python script: pkexec $commandList");
 
-    return runCommandWithCustomArguments("pkexec", commandList,
-        getErrorMessages: getErrorMessages, environment: Platform.environment);
+    // No shell: with runInShell the argv is space-joined unquoted, so a HOME
+    // like "/home/john doe" would truncate --home=… mid-path (and any shell
+    // metacharacter in it would run). expandCommand yields absolute paths,
+    // which is the documented precondition for turning the shell off.
+    final result = await runProcess("pkexec", commandList,
+        environment: Platform.environment, runInShell: false);
+    if (result.error.isNotEmpty && getErrorMessages) {
+      return result.output + result.error;
+    }
+    return result.output;
   }
 
   /// Same script and polkit action as [runPrivilegedPythonScript], but the
@@ -1505,7 +1525,8 @@ class Linux {
 
     logInfo("Run privileged python script: pkexec $commandList");
 
-    return runProcess("pkexec", commandList, environment: Platform.environment);
+    return runProcess("pkexec", commandList,
+        environment: Platform.environment, runInShell: false);
   }
 
   /// Restricted to the display class on purpose. A bare `lshw` probes PCI, USB,
@@ -1763,7 +1784,7 @@ class Linux {
       return [];
     }
     String output = await runPythonScript("search_available_apt_packages.py",
-        arguments: ["--keyword='$keyword'"], getErrorMessages: false);
+        arguments: ["--keyword=$keyword"], getErrorMessages: false);
     output = output.trim();
     List<String> lines = output.split("\n");
 
@@ -2595,6 +2616,12 @@ class Linux {
 
   static Future<bool> isFileExecutable(String filePath) async {
     var stat = await FileStat.stat(filePath);
+    // stat of a deleted path reports mode 0, and toRadixString(8) of that is
+    // "0" — too short for the substring below. Happens when a recent-files
+    // entry points at a file removed since indexing.
+    if (stat.type == FileSystemEntityType.notFound) {
+      return false;
+    }
     var mode = stat.mode.toRadixString(8).substring(3);
 
     // Example values for variable 'mode': '755', '644' etc.
