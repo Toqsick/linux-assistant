@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -144,7 +145,7 @@ class _FileManagerPageState extends State<FileManagerPage> {
           ..showSnackBar(
               SnackBar(content: Text('Löschen fehlgeschlagen: $error')));
       }
-      _navigate(_currentPath);
+      unawaited(_navigate(_currentPath));
     }
   }
 

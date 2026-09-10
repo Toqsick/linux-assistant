@@ -1,4 +1,4 @@
-import 'dart:ui' show FontFeature;
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -117,7 +117,7 @@ class _SystemMonitorPageState extends State<SystemMonitorPage>
             ? 'Signal an ${process.name} gesendet.'
             : 'Konnte ${process.name} nicht beenden.'),
       ));
-    _service.sample(); // refresh the table immediately
+    unawaited(_service.sample()); // refresh the table immediately
   }
 
   @override
@@ -203,7 +203,7 @@ class _SystemMonitorPageState extends State<SystemMonitorPage>
     return HermesStatTile(
       label: 'CPU',
       icon: Icons.speed,
-      value: percent != null ? percent.toStringAsFixed(0) : null,
+      value: percent?.toStringAsFixed(0),
       unit: '%',
       tone: (percent ?? 0) >= 90 ? HermesTone.error : HermesTone.accent,
       badge: snapshot.perCore.isNotEmpty
@@ -379,7 +379,7 @@ class _SystemMonitorPageState extends State<SystemMonitorPage>
     return HermesStatTile(
       label: 'Thermal',
       icon: Icons.thermostat,
-      value: hottest != null ? hottest.celsius.toStringAsFixed(0) : null,
+      value: hottest?.celsius.toStringAsFixed(0),
       unit: '°C',
       tone: (hottest?.celsius ?? 0) >= 80
           ? HermesTone.warning
