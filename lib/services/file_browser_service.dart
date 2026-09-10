@@ -56,9 +56,19 @@ class DirListing {
 /// Pure dart:io – listing never shells out. External programs are only used
 /// to open a path (`xdg-open`, detached).
 class FileBrowserService {
-  /// Virtual kernel filesystems. They are read-only by policy in the UI:
-  /// shown greyed out, never deletable.
-  static const List<String> protectedPrefixes = ['/proc', '/sys', '/dev'];
+  /// System locations, read-only by policy in the UI: shown greyed out,
+  /// never deletable. Beyond the virtual kernel filesystems this also
+  /// covers the directories a working system cannot survive losing — there
+  /// is no trash in this tool, one confirmed dialog permanently rm -rf's
+  /// the path. The user's own data under $HOME stays deletable (that is
+  /// the tool's job); everything system-owned does not.
+  static const List<String> protectedPrefixes = [
+    '/proc', '/sys', '/dev',
+    '/boot', '/efi', '/etc', '/usr', '/var', '/opt', '/srv', '/root',
+    // Usually symlinks into /usr on merged-usr systems, real directories
+    // on older layouts — protected either way.
+    '/bin', '/sbin', '/lib', '/lib32', '/lib64', '/libx32',
+  ];
 
   /// Quick-access locations of the Spec; the screen filters this map to
   /// paths that exist.

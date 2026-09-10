@@ -31,6 +31,9 @@ class _FileManagerPageState extends State<FileManagerPage> {
   bool _loading = true;
   bool _showHidden = false;
 
+  /// Sequencing token for [_navigate] (stale-response guard).
+  int _navSeq = 0;
+
   /// Quick-access entries that exist on this machine, resolved once.
   late final Map<String, String> _quickAccess = _existingQuickAccess();
 
@@ -51,9 +54,12 @@ class _FileManagerPageState extends State<FileManagerPage> {
   }
 
   Future<void> _navigate(String path) async {
+    // Sequencing token: a slow listing (network mount, huge directory) must
+    // not overwrite the state of a faster navigation the user did afterwards.
+    final seq = ++_navSeq;
     setState(() => _loading = true);
     final listing = await _service.listDir(path, showHidden: _showHidden);
-    if (!mounted) return;
+    if (!mounted || seq != _navSeq) return;
     setState(() {
       // Keep the requested path even on error: the breadcrumb stays
       // navigable and the error state offers the way back up.
@@ -153,6 +159,9 @@ class _FileManagerPageState extends State<FileManagerPage> {
   Widget build(BuildContext context) {
     final t = HermesTokens.of(context);
     final isProtectedPath = FileBrowserService.isProtected(_currentPath);
+    final home = Platform.environment['HOME'] ?? '';
+    final outsideHome =
+        home.isNotEmpty && !_currentPath.startsWith(home) && !isProtectedPath;
 
     return Container(
       color: t.bg,
@@ -160,6 +169,7 @@ class _FileManagerPageState extends State<FileManagerPage> {
         children: [
           _topBar(t),
           if (isProtectedPath) _protectedBanner(t),
+          if (outsideHome) _outsideHomeBanner(t),
           Expanded(child: _body(t, isProtectedPath)),
         ],
       ),
@@ -304,6 +314,32 @@ class _FileManagerPageState extends State<FileManagerPage> {
             child: Text(
               'Systempfad – Ansicht nur lesen, Löschen ist hier deaktiviert.',
               style: TextStyle(color: t.warning, fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Löschen außerhalb von $HOME ist erlaubt, aber endgültig und betrifft
+  /// meist Wechselmedien — der Streifen hält das sichtbar, bevor der
+  /// Confirm-Dialog die einzige verbleibende Sicherung ist.
+  Widget _outsideHomeBanner(HermesTokens t) {
+    return Container(
+      width: double.infinity,
+      color: t.info.withValues(alpha: 0.08),
+      padding: const EdgeInsets.symmetric(
+        horizontal: HermesTokens.space3,
+        vertical: HermesTokens.space2,
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, size: 14, color: t.info),
+          const SizedBox(width: HermesTokens.space2),
+          Expanded(
+            child: Text(
+              'Außerhalb des Home-Verzeichnisses – Löschen ist endgültig und umgeht den Papierkorb.',
+              style: TextStyle(color: t.info, fontSize: 12),
             ),
           ),
         ],

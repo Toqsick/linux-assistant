@@ -115,7 +115,11 @@ class NotesService {
   Future<Note> save(Note note) async {
     await _ensureDir();
     final target = File('${_dir.path}${Platform.pathSeparator}${note.id}.md');
-    final tmp = File('${target.path}.tmp');
+    // Eindeutiger tmp-Name: überlappende Saves derselben Notiz (Debounce-Fire
+    // + zweiter Flush) würden sonst beim zweiten rename eine Exception werfen,
+    // weil die gemeinsam genutzte .tmp-Datei schon weg ist.
+    final tmp =
+        File('${target.path}.${DateTime.now().microsecondsSinceEpoch}.tmp');
     await tmp.writeAsString(note.content, flush: true);
     await tmp.rename(target.path);
     final stat = await target.stat();

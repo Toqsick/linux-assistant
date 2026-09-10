@@ -47,6 +47,22 @@ Filesystem      Size  Used Avail Use% Mounted on
       expect(disks.single.mountPoint, "/");
     });
 
+    test("keeps mount points that contain spaces", () {
+      // The naive whitespace split shifted every column by one and blew up
+      // the Use% parse on sticks labeled "USB Stick".
+      const output = '''
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sdb1        59G   12G   47G  21% /media/user/USB Stick
+''';
+
+      final disks = LinuxFilesystem.parseDfOutput(output);
+
+      expect(disks.length, 1);
+      expect(disks.single.mountPoint, "/media/user/USB Stick");
+      expect(disks.single.usedPercent, 21);
+      expect(disks.single.isRemovable, isTrue);
+    });
+
     test("returns an empty list for empty output", () {
       expect(LinuxFilesystem.parseDfOutput(""), isEmpty);
     });

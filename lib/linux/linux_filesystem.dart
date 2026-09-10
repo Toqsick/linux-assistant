@@ -38,33 +38,36 @@ abstract class LinuxFilesystem {
 
   /// Pure parser for `df -h` output, split out so it can be tested without
   /// shelling out.
+  ///
+  /// The mount point is everything after the fifth field, not a sixth
+  /// whitespace token: mount points like "/media/user/USB Stick" would
+  /// otherwise shift every column and blow up the Use% parse.
   static List<DeviceInfo> parseDfOutput(String cmdResult) {
-    Iterable<String> lines = cmdResult
-        .split("\n")
-        .skip(1)
-        .where((x) => !_ignoreDevices.any((y) => x.startsWith(y)));
+    final linePattern =
+        RegExp(r'^(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\d+)%\s+(.+)$');
 
-    lines = lines.where((element) => element.length > 10);
+    final devices = <DeviceInfo>[];
+    final devicesRead = <String>[];
+    for (final raw in cmdResult.split("\n").skip(1)) {
+      final line = raw.trim();
+      if (_ignoreDevices.any((y) => line.startsWith(y))) continue;
+      if (line.length <= 10) continue;
 
-    var devices = List<DeviceInfo>.empty(growable: true);
-    var devicesRead = List<String>.empty(growable: true);
-    for (var line in lines) {
-      var values = line.split(" ");
-      values.removeWhere((x) => x == "");
-      if (devicesRead.contains(values[0]) || values[1].endsWith("M")) {
-        continue;
-      }
+      final match = linePattern.firstMatch(line);
+      if (match == null) continue;
+      final source = match.group(1)!;
+      final size = match.group(2)!;
+      if (devicesRead.contains(source) || size.endsWith("M")) continue;
 
       devices.add(DeviceInfo(
-          values[0],
-          values[1],
-          values[2],
-          values[3],
-          int.parse(values[4].substring(0, values[4].length - 1)),
-          values[5],
-          _removableDevices.any((x) => values[5].contains(x))));
-
-      devicesRead.add(values[0]);
+          source,
+          size,
+          match.group(3)!,
+          match.group(4)!,
+          int.parse(match.group(5)!),
+          match.group(6)!,
+          _removableDevices.any((x) => match.group(6)!.contains(x))));
+      devicesRead.add(source);
     }
 
     return devices;

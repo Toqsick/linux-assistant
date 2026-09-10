@@ -272,8 +272,9 @@ class SystemMonitorService {
 
   Future<List<ProcessInfo>> _readProcesses() async {
     try {
-      final result = await Process.run(
-          'ps', ['-eo', 'pid,pcpu,pmem,comm', '--sort=-pcpu']);
+      final result =
+          await Process.run('ps', ['-eo', 'pid,pcpu,pmem,comm', '--sort=-pcpu'])
+              .timeout(const Duration(seconds: 3));
       if (result.exitCode == 0) {
         return parsePs(result.stdout.toString());
       }
@@ -295,18 +296,22 @@ class SystemMonitorService {
       final dir = Directory('/sys/class/thermal');
       if (!await dir.exists()) return result;
       await for (final entity in dir.list(followLinks: false)) {
-        if (entity is Directory && entity.path.contains('thermal_zone')) {
+        // sysfs exposes thermal_zone* as symlinks into /sys/devices, and with
+        // followLinks: false dart:io reports those as Link, not Directory —
+        // so zones must be matched by name. Opening <zone>/temp follows the
+        // link as usual.
+        if (!entity.path.split('/').last.startsWith('thermal_zone')) {
+          continue;
+        }
+        try {
+          final celsius = parseThermal(await _readFile('${entity.path}/temp'));
+          var label = entity.path.split('/').last;
           try {
-            final celsius =
-                parseThermal(await _readFile('${entity.path}/temp'));
-            var label = entity.path.split('/').last;
-            try {
-              label = (await _readFile('${entity.path}/type')).trim();
-            } catch (_) {}
-            result.add(ThermalReading(label: label, celsius: celsius));
-          } catch (_) {
-            // A zone that vanishes or is unreadable is skipped, not fatal.
-          }
+            label = (await _readFile('${entity.path}/type')).trim();
+          } catch (_) {}
+          result.add(ThermalReading(label: label, celsius: celsius));
+        } catch (_) {
+          // A zone that vanishes or is unreadable is skipped, not fatal.
         }
       }
     } catch (_) {}
@@ -316,27 +321,39 @@ class SystemMonitorService {
 
   /// NVIDIA only, probed once via `which`. Read every fifth sample – it is
   /// the one fork-exec on the hot path and does not need 1 Hz resolution.
+  ///
+  /// nvidia-smi is documented to block indefinitely on wedged driver state.
+  /// A hang here would hold `_sampling` forever and silently freeze the
+  /// whole monitor, so every call gets a timeout and three failures in a
+  /// row switch the GPU tile off.
+  int _gpuFailures = 0;
+
   Future<GpuSample?> _readGpu() async {
     if (!_gpuChecked) {
       _gpuChecked = true;
       try {
-        final which = await Process.run('which', ['nvidia-smi']);
+        final which = await Process.run('which', ['nvidia-smi'])
+            .timeout(const Duration(seconds: 3));
         _gpuAvailable = which.exitCode == 0;
       } catch (_) {
         _gpuAvailable = false;
       }
     }
-    if (!_gpuAvailable) return null;
+    if (!_gpuAvailable || _gpuFailures >= 3) return null;
     if (_tickCount % 5 != 0) return snapshot.value.gpu;
     try {
       final result = await Process.run('nvidia-smi', [
         '--query-gpu=utilization.gpu,memory.used,memory.total,temperature.gpu',
         '--format=csv,noheader',
-      ]);
+      ]).timeout(const Duration(seconds: 5));
       if (result.exitCode == 0) {
+        _gpuFailures = 0;
         return parseNvidiaSmi(result.stdout.toString());
       }
-    } catch (_) {}
+      _gpuFailures++;
+    } catch (_) {
+      _gpuFailures++;
+    }
     return snapshot.value.gpu;
   }
 
