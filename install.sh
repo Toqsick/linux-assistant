@@ -166,6 +166,8 @@ step "4. Reste"
 
 if [ "$PURGE" = "1" ]; then
     rm -rf ~/.config/linux-assistant ~/.cache/linux-assistant
+    # Written by the command-queue with underscores, unlike everything else.
+    rm -f ~/.cache/linux_assistant_commands
     info "Einstellungen und Cache gelöscht."
 else
     for d in ~/.config/linux-assistant ~/.cache/linux-assistant; do
@@ -229,6 +231,53 @@ if command -v gsettings >/dev/null 2>&1 && [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" 
             fi
         fi
     fi
+fi
+
+# Cinnamon: same dconf structure as GNOME under a different schema. XFCE is
+# one targeted property per modifier. KDE writes ini blocks in khotkeysrc
+# whose safe removal needs the python helpers the package removal just
+# deleted, so KDE gets an explicit hint instead of a fragile sed.
+if [ "$PURGE" = "1" ] && command -v gsettings >/dev/null 2>&1 \
+        && [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+    CIN_SCHEMA="org.cinnamon.desktop.keybindings"
+    if gsettings list-schemas 2>/dev/null | grep -qx "$CIN_SCHEMA"; then
+        KEEP=()
+        DROP=()
+        while IFS= read -r path; do
+            [ -n "$path" ] || continue
+            cmd="$(gsettings get "$CIN_SCHEMA.custom-keybinding:$path" command 2>/dev/null || echo "")"
+            if [[ "$cmd" == *linux-assistant* ]]; then DROP+=("$path"); else KEEP+=("$path"); fi
+        done < <(gsettings get "$CIN_SCHEMA" custom-keybindings 2>/dev/null \
+                 | tr -d "[]' " | tr ',' '\n')
+        if [ "${#DROP[@]}" -gt 0 ]; then
+            list="["
+            for p in "${KEEP[@]:-}"; do
+                [ -n "$p" ] || continue
+                [ "$list" != "[" ] && list="$list, "
+                list="$list'$p'"
+            done
+            gsettings set "$CIN_SCHEMA" custom-keybindings "$list]"
+            if command -v dconf >/dev/null 2>&1; then
+                for p in "${DROP[@]}"; do
+                    dconf reset -f "$p" 2>/dev/null || true
+                done
+            fi
+            info "Cinnamon-Tastenkürzel entfernt."
+        fi
+    fi
+fi
+
+if [ "$PURGE" = "1" ] && command -v xfconf-query >/dev/null 2>&1 \
+        && xfconf-query -c xfce4-keyboard-shortcuts -l >/dev/null 2>&1; then
+    for mod in "<Super>q" "<Alt>q"; do
+        if xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/$mod" -r 2>/dev/null; then
+            info "XFCE-Tastenkürzel $mod entfernt."
+        fi
+    done
+fi
+
+if [ "$PURGE" = "1" ] && grep -q "linux-assistant" ~/.config/khotkeysrc 2>/dev/null; then
+    info "Hinweis: in ~/.config/khotkeysrc liegt noch ein KDE-Kürzel — bitte im KDE-Kurzbefehl-Editor entfernen."
 fi
 
 step "Fertig"

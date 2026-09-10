@@ -17,9 +17,19 @@ class SingleInstance {
   static ServerSocket? _server;
 
   static String socketPath() {
-    final String runtimeDirectory =
-        Platform.environment["XDG_RUNTIME_DIR"] ?? Directory.systemTemp.path;
-    return "$runtimeDirectory/linux-assistant.sock";
+    final String? runtimeDirectory = Platform.environment["XDG_RUNTIME_DIR"];
+    if (runtimeDirectory != null && runtimeDirectory.isNotEmpty) {
+      return "$runtimeDirectory/linux-assistant.sock";
+    }
+    // No XDG_RUNTIME_DIR (SSH-forwarded session, some display managers):
+    // the system temp dir is shared between users, so the fallback has to
+    // be user-keyed — otherwise user B's launch hands the hotkey to user
+    // A's running instance and exits without ever showing a window.
+    // dart:io has no getuid(); the login name is unique per machine.
+    final String user = Platform.environment["USER"] ??
+        Platform.environment["LOGNAME"] ??
+        "unknown-user";
+    return "${Directory.systemTemp.path}/linux-assistant-$user.sock";
   }
 
   static InternetAddress _address() =>

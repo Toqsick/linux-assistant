@@ -40,13 +40,14 @@ cp linux-assistant.sh "$STAGE/usr/bin/linux-assistant"
 chmod +x "$STAGE/usr/bin/linux-assistant"
 chmod 755 "$STAGE/DEBIAN"
 
-# Version and Installed-Size are generated, not tracked. The checked-in
-# control file used to carry both, and both went stale: the committed Version
-# was whatever the last release happened to be, and Installed-Size was whatever
-# the last local build measured.
+# Version, Installed-Size and Architecture are generated, not tracked. The
+# checked-in control file used to carry Version and Installed-Size, and both
+# went stale; the Architecture field stayed a hardcoded amd64 even when
+# dpkg named the artifact arm64.
 SIZE=$(du -s "$STAGE" | cut -f1)
 sed -i "/^Description:/i Version: $VERSION\nInstalled-Size: $SIZE" \
   "$STAGE/DEBIAN/control"
+sed -i "s/^Architecture: .*/Architecture: $ARCH/" "$STAGE/DEBIAN/control"
 
 # Build deb package
 dpkg-deb --build -Zxz --root-owner-group "$STAGE"

@@ -11,10 +11,12 @@ class WeeklyTasks {
   static const int _defaultTimeout = 5;
 
   static Future<void> doWeekleyTasks() async {
-    DateTime.parse(
-        ConfigHandler().getValueUnsafe("last-weekly-task", "1970-01-01"));
-    DateTime lastSearch = DateTime.parse(
-        ConfigHandler().getValueUnsafe("last-weekly-task", "1970-01-01"));
+    // tryParse: a hand-edited config value that is valid JSON but not a
+    // date used to throw here on every start, permanently disabling the
+    // update check because the broken value was never rewritten.
+    DateTime lastSearch = DateTime.tryParse(
+            ConfigHandler().getValueUnsafe("last-weekly-task", "1970-01-01")) ??
+        DateTime(1970);
     if (DateTime.now().difference(lastSearch).inDays < 7) {
       return;
     }

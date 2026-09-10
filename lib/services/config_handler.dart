@@ -129,8 +129,11 @@ class ConfigHandler {
 
     // Write to a sibling and rename. `writeAsString` truncates first, so an
     // app that dies mid-write — or two windows writing at once — used to leave
-    // a half-written config that no longer parses.
-    File temporary = File("${configFile.path}.tmp");
+    // a half-written config that no longer parses. The sibling's name is
+    // unique per write: two overlapping saves sharing one .tmp path raced on
+    // the rename and lost one of the saves.
+    File temporary =
+        File("${configFile.path}.${DateTime.now().microsecondsSinceEpoch}.tmp");
     await temporary.writeAsString(configString, flush: true);
 
     if (await configFile.exists()) {

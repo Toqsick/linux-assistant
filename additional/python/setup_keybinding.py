@@ -154,11 +154,15 @@ def add_linux_assistant_keybinding_xfce():
             check=False,
         )
 
-    subprocess.run(
+    result = subprocess.run(
         ["xfconf-query", "-c", "xfce4-keyboard-shortcuts",
          "-p", wanted, "-n", "-t", "string", "-s", "linux-assistant"],
         check=False,
     )
+    if result.returncode != 0:
+        # Same contract as the unknown-desktop case: exiting 0 here would
+        # make the app mark the hotkey as done and never retry.
+        jessentials.fail("xfconf-query could not create the shortcut.", 1)
 
 # KDE ----------------------------------------------------------------------------------
 # Keymodifier is always <Alt> here.
@@ -207,8 +211,12 @@ def main():
     elif "kde" in desktop:
         add_linux_assistant_keybinding_kde()
     else:
-        print(f"No supported desktop found in XDG_CURRENT_DESKTOP='{desktop}', "
-              "no keyboard shortcut was registered.")
+        # Exit non-zero: the Dart side marks the hotkey done on success and
+        # never retries. A silent "nothing registered" left the shortcut
+        # dead forever on sessions of unlisted desktops.
+        jessentials.fail(
+            f"No supported desktop found in XDG_CURRENT_DESKTOP='{desktop}', "
+            "no keyboard shortcut was registered.", 1)
 
 if __name__ == "__main__":
     main()
