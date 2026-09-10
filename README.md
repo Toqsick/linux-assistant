@@ -24,7 +24,7 @@ hand.
 Linux Assistant registers a global hotkey that brings the launcher to the
 foreground. The default is `Super+Q`, except on **KDE**, **Pop!_OS**, **Ubuntu**
 and **Zorin OS**, where the desktop convention is `Alt+Q` and the app follows
-it. `lib/services/linux.dart` (`get_hotkey_modifier()`) is the source of truth.
+it. `lib/services/linux.dart` (`getHotkeyModifier()`) is the source of truth.
 
 Two registration paths exist and the app picks one at startup based on the
 session type:
@@ -47,12 +47,12 @@ desktop's settings rather than in the package.
 To build:
 
 ```bash
-sudo apt install libkeybinder-3.0-0 libkeybinder-3.0-dev wmctrl
+sudo apt install libkeybinder-3.0-0 libkeybinder-3.0-dev
 ```
 
 To run an installed package, only the runtime libraries are needed — the `.deb`
 declares them, so `apt` pulls them in for you. The declared runtime set is
-`libgtk-3-0, libkeybinder-3.0-0, wmctrl, wget, python3, python3-gi,
+`libgtk-3-0, libkeybinder-3.0-0, python3, python3-gi,
 gir1.2-gtk-3.0, python3-apt, mesa-utils, pkexec | policykit-1` (see
 `deb/DEBIAN/control`).
 
@@ -61,7 +61,7 @@ under [Build](#build)), `apt` does not install those packages for you. The
 Python helpers need GObject introspection, so install them by hand first:
 
 ```bash
-sudo apt install libgtk-3-0 libkeybinder-3.0-0 wmctrl wget python3 python3-gi \
+sudo apt install libgtk-3-0 libkeybinder-3.0-0 python3 python3-gi \
      gir1.2-gtk-3.0 python3-apt mesa-utils policykit-1
 ```
 
@@ -100,10 +100,13 @@ sudo apt install ./linux-assistant_*_amd64.deb
 # The build no longer mutates the tracked deb/DEBIAN/control in place —
 # Version and Installed-Size are stamped into a staging dir under build/.
 
-# Option 3: Build .rpm package:
-bash ./build-rpm.sh
+# Option 3: Build .rpm package (unmaintained in this fork — the spec last
+# matched 0.6.2; see packaging/unmaintained/README.md):
+bash packaging/unmaintained/build-rpm.sh
 
-# Option 4: Build Arch package
+# Option 4: Build Arch package (unmaintained in this fork — the PKGBUILD is
+# parked under packaging/unmaintained/ at pkgver=0.5.3, while build-arch-pkg.sh
+# expects it next to itself; see packaging/unmaintained/README.md)
 # You can only do this on an arch based distro
 bash ./build-arch-pkg.sh
 # To Install:
@@ -141,6 +144,10 @@ flatpak uninstall io.github.jean28518.Linux-Assistant
 
 ## Run as flatpak
 
+Unmaintained in this fork — the manifest is parked under
+`packaging/unmaintained/flatpak/` and targets the Freedesktop 23.08 runtime,
+which is end of life (see `packaging/unmaintained/README.md`).
+
 Repo: <https://github.com/Jean28518/flathub/tree/com.github.jean28518.Linux-Assistant>
 
 - Uncomment the archive from the web and use e.g. this local one:
@@ -154,7 +161,7 @@ Repo: <https://github.com/Jean28518/flathub/tree/com.github.jean28518.Linux-Assi
 flatpak install runtime/org.freedesktop.Sdk/x86_64/23.08
 
 rm -r .flatpak-builder/ # Only if you built something before.
-flatpak-builder build-dir io.github.jean28518.Linux-Assistant.yml  --user --force-clean --install 
+flatpak-builder build-dir packaging/unmaintained/flatpak/io.github.jean28518.Linux-Assistant.yml  --user --force-clean --install 
 flatpak run io.github.jean28518.Linux-Assistant
 ```
 
@@ -167,6 +174,7 @@ flatpak run io.github.jean28518.Linux-Assistant
 - English
 - German
 - Italian
+- Finnish
 
 ## Mission
 
