@@ -1140,4 +1140,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get securityCheckScriptErrorBody =>
       'The checker crashed after root access was granted. This is a bug in Linux Assistant, not a permissions problem. Details for a bug report:';
+
+  @override
+  String get themeModeSetting => 'Theme';
+
+  @override
+  String get themeModeSystem => 'System';
+
+  @override
+  String get themeModeLight => 'Light';
+
+  @override
+  String get themeModeDark => 'Dark';
 }

@@ -1234,5 +1234,29 @@
     "placeholders": {},
     "description": "",
     "type": "text"
+  },
+  "themeModeSetting": "Theme",
+  "@themeModeSetting": {
+    "placeholders": {},
+    "description": "Label above the three-way theme chooser in the appearance settings",
+    "type": "text"
+  },
+  "themeModeSystem": "System",
+  "@themeModeSystem": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "themeModeLight": "Light",
+  "@themeModeLight": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "themeModeDark": "Dark",
+  "@themeModeDark": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
   }
 }

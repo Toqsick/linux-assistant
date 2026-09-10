@@ -1268,5 +1268,29 @@
     "placeholders": {},
     "description": "",
     "type": "text"
+  },
+  "themeModeSetting": "Farbschema",
+  "@themeModeSetting": {
+    "placeholders": {},
+    "description": "Label above the three-way theme chooser in the appearance settings",
+    "type": "text"
+  },
+  "themeModeSystem": "System",
+  "@themeModeSystem": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "themeModeLight": "Hell",
+  "@themeModeLight": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "themeModeDark": "Dunkel",
+  "@themeModeDark": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
   }
 }

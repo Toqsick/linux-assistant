@@ -839,5 +839,29 @@
     "placeholders": {},
     "description": "",
     "type": "text"
+  },
+  "themeModeSetting": "Teema",
+  "@themeModeSetting": {
+    "placeholders": {},
+    "description": "Label above the three-way theme chooser in the appearance settings",
+    "type": "text"
+  },
+  "themeModeSystem": "Järjestelmä",
+  "@themeModeSystem": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "themeModeLight": "Vaalea",
+  "@themeModeLight": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "themeModeDark": "Tumma",
+  "@themeModeDark": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
   }
 }

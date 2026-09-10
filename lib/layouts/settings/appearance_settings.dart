@@ -1,28 +1,74 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
-import 'package:linux_assistant/layouts/mint_y.dart';
 import 'package:linux_assistant/layouts/settings/settings_widgets.dart';
 import 'package:linux_assistant/services/config_handler.dart';
 import 'package:linux_assistant/services/linux.dart';
+import 'package:linux_assistant/services/theme_controller.dart';
 
-class AppearanceSettings extends StatelessWidget {
-  AppearanceSettings({super.key}) {
+class AppearanceSettings extends StatefulWidget {
+  const AppearanceSettings({super.key});
+
+  @override
+  State<AppearanceSettings> createState() => _AppearanceSettingsState();
+}
+
+class _AppearanceSettingsState extends State<AppearanceSettings> {
+  final ThemeController _themeController = ThemeController();
+
+  @override
+  void initState() {
+    super.initState();
     ConfigHandler().ensureConfigIsLoaded();
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return SizedBox(
       width: min(600, MediaQuery.of(context).size.width - 100),
       child: Column(
         mainAxisSize: MainAxisSize.max,
         children: [
-          SettingWidgetOnOff(
-            settingKey: "dark_theme_activated",
-            text: AppLocalizations.of(context)!.darkThemeEnabled,
-            defaultValue: Theme.of(context) == MintY.themeDark(),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  l10n.themeModeSetting,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+                ListenableBuilder(
+                  listenable: _themeController,
+                  builder: (context, _) => SegmentedButton<ThemeMode>(
+                    segments: [
+                      ButtonSegment(
+                        value: ThemeMode.system,
+                        label: Text(l10n.themeModeSystem),
+                        icon: const Icon(Icons.brightness_auto_outlined),
+                      ),
+                      ButtonSegment(
+                        value: ThemeMode.light,
+                        label: Text(l10n.themeModeLight),
+                        icon: const Icon(Icons.light_mode_outlined),
+                      ),
+                      ButtonSegment(
+                        value: ThemeMode.dark,
+                        label: Text(l10n.themeModeDark),
+                        icon: const Icon(Icons.dark_mode_outlined),
+                      ),
+                    ],
+                    selected: {_themeController.themeMode},
+                    onSelectionChanged: (selection) => unawaited(
+                        _themeController.setThemeMode(selection.first)),
+                  ),
+                ),
+              ],
+            ),
           ),
           SettingWidgetOnOff(
             settingKey: "colorfulBackground",

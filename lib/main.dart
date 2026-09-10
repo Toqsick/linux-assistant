@@ -282,6 +282,9 @@ class _MyAppState extends State<MyApp> {
         Locale('en', ''),
         Locale('de', ''),
         Locale('it', ''),
+        // Generated (app_localizations_fi.dart) but previously never
+        // registered, so Finnish users silently got English.
+        Locale('fi', ''),
       ],
       theme: MintY.theme(accent: accent),
       darkTheme: MintY.themeDark(accent: accent),

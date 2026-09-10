@@ -1150,4 +1150,16 @@ class AppLocalizationsFi extends AppLocalizations {
   @override
   String get securityCheckScriptErrorBody =>
       'Tarkistusskripti kaatui root-käyttöoikeuden myöntämisen jälkeen. Kyseessä on Linux Assistantin ohjelmavirhe, ei käyttöoikeusongelma. Yksityiskohdat virheraporttia varten:';
+
+  @override
+  String get themeModeSetting => 'Teema';
+
+  @override
+  String get themeModeSystem => 'Järjestelmä';
+
+  @override
+  String get themeModeLight => 'Vaalea';
+
+  @override
+  String get themeModeDark => 'Tumma';
 }

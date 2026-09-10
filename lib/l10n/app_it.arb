@@ -1248,5 +1248,29 @@
     "placeholders": {},
     "description": "",
     "type": "text"
+  },
+  "themeModeSetting": "Tema",
+  "@themeModeSetting": {
+    "placeholders": {},
+    "description": "Label above the three-way theme chooser in the appearance settings",
+    "type": "text"
+  },
+  "themeModeSystem": "Sistema",
+  "@themeModeSystem": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "themeModeLight": "Chiaro",
+  "@themeModeLight": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "themeModeDark": "Scuro",
+  "@themeModeDark": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
   }
 }

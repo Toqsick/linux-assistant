@@ -1149,4 +1149,16 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get securityCheckScriptErrorBody =>
       'Das Prüf-Skript ist abgestürzt, nachdem Root-Zugriff erteilt wurde. Das ist ein Bug in Linux Assistant, kein Rechte-Problem. Details für einen Fehlerbericht:';
+
+  @override
+  String get themeModeSetting => 'Farbschema';
+
+  @override
+  String get themeModeSystem => 'System';
+
+  @override
+  String get themeModeLight => 'Hell';
+
+  @override
+  String get themeModeDark => 'Dunkel';
 }
