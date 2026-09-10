@@ -42,7 +42,9 @@ def run_command(command, print_output=True, return_output=False, environment = {
     if print_output or return_output:
         while True:
             output = process.stdout.readline()
-            output = output.decode("utf-8")
+            # errors="replace": one non-UTF-8 byte in a filename or repo file
+            # must not kill the whole check with a UnicodeDecodeError.
+            output = output.decode("utf-8", "replace")
             if output == "" and process.poll() is not None:
                 break
             if output:
@@ -63,6 +65,22 @@ def _demote(user_uid, user_gid):
         os.setgid(user_gid)
         os.setuid(user_uid)
     return result
+
+
+def systemd_unit_is_active(unit):
+    """True iff the given systemd unit is currently active.
+
+    Exit-code based on purpose: `systemctl status` prints a multi-line block
+    even for installed-but-stopped and not-found units, and that text is
+    translated (e.g. "Aktiv: aktiv (laufend)" on a German desktop), so both
+    line counting and substring matching produced wrong answers.
+    """
+    env = dict(os.environ)
+    env["LC_ALL"] = "C"
+    completed = subprocess.run(
+        ["/usr/bin/systemctl", "is-active", "--quiet", unit],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env)
+    return completed.returncode == 0
 
 
 def get_arguments():

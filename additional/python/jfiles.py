@@ -36,7 +36,9 @@ def append_line_to_file(file_path, line):
 def get_all_lines_from_file(file_path):
     if not does_file_exist(file_path):
         return []
-    text = open(file_path, 'r')
+    # errors="replace": a latin-1 umlaut in one repo file must not abort the
+    # whole check with a UnicodeDecodeError under a UTF-8 locale.
+    text = open(file_path, 'r', encoding="utf-8", errors="replace")
 
     return_array = []
     i = 1

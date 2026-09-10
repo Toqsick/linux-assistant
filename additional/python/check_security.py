@@ -44,15 +44,13 @@ def check_server_access():
         print("nofirewall")
     
     # Check for Xrdp
-    lines = jessentials.run_command("/usr/bin/systemctl status xrdp", False, True)
-    if (len(lines) > 1):
+    if jessentials.systemd_unit_is_active("xrdp"):
         print("xrdprunning")
-    # Check for ssh:
-    lines = jessentials.run_command("/usr/bin/systemctl status ssh", False, True)
-    if (len(lines) > 1):
+    # Check for ssh: Debian names the unit ssh, most other families sshd.
+    if (jessentials.systemd_unit_is_active("ssh")
+            or jessentials.systemd_unit_is_active("sshd")):
         print("sshrunning")
-        lines = jessentials.run_command("/usr/bin/systemctl status fail2ban", False, True)
-        if (len(lines) == 0):
+        if not jessentials.systemd_unit_is_active("fail2ban"):
             print("fail2bannotrunning")
 
 if __name__ == "__main__":
