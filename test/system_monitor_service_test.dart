@@ -55,11 +55,11 @@ void main() {
       final a = SystemMonitorService.parseProcStat(procStatA);
       final b = SystemMonitorService.parseProcStat(procStatB);
       // aggregate: delta busy 330 of delta total 1050 → 31.43 %
-      expect(SystemMonitorService.cpuUsageDelta(a[0], b[0]),
-          closeTo(31.43, 0.01));
+      expect(
+          SystemMonitorService.cpuUsageDelta(a[0], b[0]), closeTo(31.43, 0.01));
       // per core: delta busy 55 of delta total 515 → 10.68 %
-      expect(SystemMonitorService.cpuUsageDelta(a[1], b[1]),
-          closeTo(10.68, 0.01));
+      expect(
+          SystemMonitorService.cpuUsageDelta(a[1], b[1]), closeTo(10.68, 0.01));
     });
 
     test('zero or negative deltas report 0 instead of crashing', () {
@@ -129,8 +129,8 @@ void main() {
 
   group('parseNvidiaSmi', () {
     test('strips units from the csv fields', () {
-      final gpu = SystemMonitorService.parseNvidiaSmi(
-          '34 %, 2105 MiB, 8192 MiB, 61\n');
+      final gpu =
+          SystemMonitorService.parseNvidiaSmi('34 %, 2105 MiB, 8192 MiB, 61\n');
       expect(gpu, isNotNull);
       expect(gpu!.utilizationPercent, 34);
       expect(gpu.memoryUsedMb, 2105);

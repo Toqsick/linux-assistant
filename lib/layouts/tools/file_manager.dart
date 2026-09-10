@@ -180,8 +180,8 @@ class _FileManagerPageState extends State<FileManagerPage> {
             height: 40,
             child: ListView(
               scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(
-                  horizontal: HermesTokens.space2),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: HermesTokens.space2),
               children: [
                 for (final entry in _quickAccess.entries)
                   _quickAccessChip(t, entry.key, entry.value),
@@ -238,8 +238,7 @@ class _FileManagerPageState extends State<FileManagerPage> {
         style: TextButton.styleFrom(
           backgroundColor:
               active ? t.accent.withValues(alpha: 0.12) : Colors.transparent,
-          padding:
-              const EdgeInsets.symmetric(horizontal: HermesTokens.space2),
+          padding: const EdgeInsets.symmetric(horizontal: HermesTokens.space2),
           minimumSize: const Size(0, 28),
         ),
         child: Text(
@@ -378,9 +377,8 @@ class _FileManagerPageState extends State<FileManagerPage> {
         : entry.isDirectory
             ? Icons.folder_outlined
             : Icons.insert_drive_file_outlined;
-    final iconColor = entry.isDirectory && !entry.isSymlink
-        ? t.accent
-        : t.muted;
+    final iconColor =
+        entry.isDirectory && !entry.isSymlink ? t.accent : t.muted;
 
     return Material(
       color: Colors.transparent,

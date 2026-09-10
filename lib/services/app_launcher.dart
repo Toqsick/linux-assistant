@@ -39,8 +39,8 @@ class AppLauncher {
   static Future<bool> Function(String binary) _which = _defaultWhich;
 
   /// Signatur für Prozess-Starts (injizierbar für Tests).
-  static Future<bool> Function(String binary, List<String> args)
-      _starter = _defaultStarter;
+  static Future<bool> Function(String binary, List<String> args) _starter =
+      _defaultStarter;
 
   /// Überschreibt Prozess-Aufrufe – nur für Tests verwenden!
   static void debugOverride({

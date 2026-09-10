@@ -11,8 +11,7 @@ import 'package:linux_assistant/services/notes_service.dart';
 /// Autosave ist debounced (500 ms) – es gibt bewusst keinen Speichern-Button.
 /// Löschen ist eine destructive action und braucht den Confirm-Dialog.
 class QuickNotesPage extends StatefulWidget {
-  const QuickNotesPage({super.key, NotesService? service})
-      : _service = service;
+  const QuickNotesPage({super.key, NotesService? service}) : _service = service;
 
   /// Injizierbar für Tests; Default: echter XDG-Speicherort.
   final NotesService? _service;
@@ -88,8 +87,7 @@ class _QuickNotesPageState extends State<QuickNotesPage> {
   Future<void> _flushSave() async {
     final current = _selected;
     if (current == null) return;
-    final saved =
-        await _service.save(current.copyWith(content: _editor.text));
+    final saved = await _service.save(current.copyWith(content: _editor.text));
     if (!mounted) return;
     setState(() {
       _selected = saved;
@@ -211,9 +209,7 @@ class _QuickNotesPageState extends State<QuickNotesPage> {
                             border: Border(
                               left: BorderSide(
                                 width: 3,
-                                color: selected
-                                    ? t.accent
-                                    : Colors.transparent,
+                                color: selected ? t.accent : Colors.transparent,
                               ),
                             ),
                           ),
@@ -224,9 +220,8 @@ class _QuickNotesPageState extends State<QuickNotesPage> {
                             style: TextStyle(
                               fontSize: 13,
                               color: selected ? t.accent : t.strong,
-                              fontWeight: selected
-                                  ? FontWeight.w600
-                                  : FontWeight.w400,
+                              fontWeight:
+                                  selected ? FontWeight.w600 : FontWeight.w400,
                             ),
                           ),
                         ),
@@ -260,8 +255,7 @@ class _QuickNotesPageState extends State<QuickNotesPage> {
         // Editor-Aktionsleiste.
         Container(
           height: 44,
-          padding:
-              const EdgeInsets.symmetric(horizontal: HermesTokens.space3),
+          padding: const EdgeInsets.symmetric(horizontal: HermesTokens.space3),
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(color: t.borderSubtle, width: 1),

@@ -297,7 +297,8 @@ class SystemMonitorService {
       await for (final entity in dir.list(followLinks: false)) {
         if (entity is Directory && entity.path.contains('thermal_zone')) {
           try {
-            final celsius = parseThermal(await _readFile('${entity.path}/temp'));
+            final celsius =
+                parseThermal(await _readFile('${entity.path}/temp'));
             var label = entity.path.split('/').last;
             try {
               label = (await _readFile('${entity.path}/type')).trim();

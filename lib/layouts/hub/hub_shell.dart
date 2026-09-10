@@ -181,8 +181,7 @@ class _HubShellState extends State<HubShell>
         break;
       case BrowserLaunchResult.failed:
         _showSnack(_tr(context,
-            de: 'Kein Browser gefunden.',
-            en: 'No browser found.'));
+            de: 'Kein Browser gefunden.', en: 'No browser found.'));
         break;
     }
   }
@@ -256,7 +255,8 @@ class _HubShellState extends State<HubShell>
   /// (`tools`, `browser`, `quickNotes`, `fileManager`, `systemMonitor`) and
   /// regenerate with `flutter gen-l10n`. The .arb files are ~40 KB each and
   /// were not editable via API at implementation time.
-  static String _tr(BuildContext context, {required String de, required String en}) {
+  static String _tr(BuildContext context,
+      {required String de, required String en}) {
     return Localizations.localeOf(context).languageCode == 'de' ? de : en;
   }
 

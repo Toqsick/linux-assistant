@@ -46,10 +46,8 @@ void main() {
       final note = await service.create();
       await service.save(note.copyWith(content: 'test'));
 
-      final leftovers = await tmp
-          .list()
-          .where((e) => e.path.endsWith('.tmp'))
-          .toList();
+      final leftovers =
+          await tmp.list().where((e) => e.path.endsWith('.tmp')).toList();
       expect(leftovers, isEmpty);
     });
 
@@ -71,8 +69,8 @@ void main() {
     });
 
     test('delete() auf nicht-existente Notiz wirft nicht', () async {
-      final ghost = Note(
-          id: 'ghost', title: '', content: '', modified: DateTime.now());
+      final ghost =
+          Note(id: 'ghost', title: '', content: '', modified: DateTime.now());
       await service.delete(ghost); // darf nicht crashen
     });
 

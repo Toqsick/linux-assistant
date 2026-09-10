@@ -40,7 +40,8 @@ void main() {
           return true;
         },
       );
-      final result = await AppLauncher.launchBrowser(url: 'https://example.com');
+      final result =
+          await AppLauncher.launchBrowser(url: 'https://example.com');
       expect(result, BrowserLaunchResult.launchedPreferred);
       expect(started.single, 'brave https://example.com');
     });

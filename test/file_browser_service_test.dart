@@ -32,8 +32,8 @@ void main() {
       expect(names.sublist(0, 2), ['dirA', 'dirB']);
       expect(names.indexOf('file1.txt'), lessThan(names.indexOf('file2.md')));
       // A symlink to a directory sorts with the files, never the dirs:
-      expect(names.indexOf('link_to_dir'),
-          greaterThan(names.indexOf('file2.md')));
+      expect(
+          names.indexOf('link_to_dir'), greaterThan(names.indexOf('file2.md')));
     });
 
     test('hidden entries are filtered by default', () async {
@@ -137,8 +137,7 @@ void main() {
 
     test('deletes a symlink, not its target', () async {
       final listing = await service.listDir(tmp.path);
-      final link =
-          listing.entries.firstWhere((e) => e.name == 'link_to_file');
+      final link = listing.entries.firstWhere((e) => e.name == 'link_to_file');
       expect(await service.delete(link), isNull);
       expect(await File('${tmp.path}/file1.txt').exists(), isTrue);
       expect(await FileSystemEntity.isLink(link.path), isFalse);

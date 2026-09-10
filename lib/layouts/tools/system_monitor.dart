@@ -107,8 +107,8 @@ class _SystemMonitorPageState extends State<SystemMonitorPage>
     );
     if (action == null) return;
 
-    final ok = await _service.terminateProcess(process.pid,
-        force: action == 'kill');
+    final ok =
+        await _service.terminateProcess(process.pid, force: action == 'kill');
     if (!mounted) return;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -174,8 +174,7 @@ class _SystemMonitorPageState extends State<SystemMonitorPage>
       ),
       child: Row(
         children: [
-          HermesHaloDot(
-              tone: _paused ? HermesTone.neutral : HermesTone.accent),
+          HermesHaloDot(tone: _paused ? HermesTone.neutral : HermesTone.accent),
           const SizedBox(width: HermesTokens.space2),
           Text(
             _paused ? 'Pausiert' : 'Live · 1 s',
@@ -236,8 +235,8 @@ class _SystemMonitorPageState extends State<SystemMonitorPage>
           value: (percent / 100).clamp(0.0, 1.0),
           minHeight: 4,
           backgroundColor: t.surfaceSubtleHover,
-          valueColor: AlwaysStoppedAnimation<Color>(
-              percent >= 90 ? t.error : t.accent),
+          valueColor:
+              AlwaysStoppedAnimation<Color>(percent >= 90 ? t.error : t.accent),
         ),
       ),
     );
@@ -305,7 +304,9 @@ class _SystemMonitorPageState extends State<SystemMonitorPage>
       value: worst != null ? '${worst.usedPercent}' : null,
       unit: '%',
       tone: critical ? HermesTone.error : HermesTone.accent,
-      badge: worst != null ? HermesBadge(dense: true, text: worst.mountPoint) : null,
+      badge: worst != null
+          ? HermesBadge(dense: true, text: worst.mountPoint)
+          : null,
       visual: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -353,8 +354,8 @@ class _SystemMonitorPageState extends State<SystemMonitorPage>
   }
 
   Widget _networkTile(HermesTokens t, MonitorSnapshot snapshot) {
-    final maxRate = snapshot.netHistory.fold<double>(
-        1024, (a, b) => b > a ? b : a); // sparkline floor: 1 K/s
+    final maxRate = snapshot.netHistory
+        .fold<double>(1024, (a, b) => b > a ? b : a); // sparkline floor: 1 K/s
     return HermesStatTile(
       label: 'Netzwerk',
       icon: Icons.network_check,
@@ -374,14 +375,15 @@ class _SystemMonitorPageState extends State<SystemMonitorPage>
   }
 
   Widget _thermalTile(HermesTokens t, MonitorSnapshot snapshot) {
-    final hottest =
-        snapshot.thermals.isEmpty ? null : snapshot.thermals.first;
+    final hottest = snapshot.thermals.isEmpty ? null : snapshot.thermals.first;
     return HermesStatTile(
       label: 'Thermal',
       icon: Icons.thermostat,
       value: hottest != null ? hottest.celsius.toStringAsFixed(0) : null,
       unit: '°C',
-      tone: (hottest?.celsius ?? 0) >= 80 ? HermesTone.warning : HermesTone.accent,
+      tone: (hottest?.celsius ?? 0) >= 80
+          ? HermesTone.warning
+          : HermesTone.accent,
       footer: snapshot.thermals.length <= 1
           ? null
           : Column(
