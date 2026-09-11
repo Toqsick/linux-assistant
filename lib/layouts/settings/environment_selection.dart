@@ -10,7 +10,7 @@ import 'package:linux_assistant/services/linux.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
 
 class EnvironmentSelectionView extends StatefulWidget {
-  const EnvironmentSelectionView({Key? key}) : super(key: key);
+  const EnvironmentSelectionView({super.key});
 
   @override
   State<EnvironmentSelectionView> createState() =>
@@ -185,34 +185,32 @@ class _EnvironmentSelectionViewState extends State<EnvironmentSelectionView> {
             height: 32,
           ),
           Expanded(
-            child: Container(
-              child: ListView.builder(
-                // primary: true,
-                itemCount: DESKTOPS.values.length,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: MintYButton(
-                      text: Text(
-                        getNiceStringOfDesktopsEnum(DESKTOPS.values[index]),
-                        style: MintY.heading4White,
-                      ),
-                      color: MintY.currentColor,
-                      onPressed: (() {
-                        setState(() {
-                          environment.desktop = DESKTOPS.values[index];
-                          // `.name`, not the enum: the config is written with
-                          // jsonEncode, which cannot encode a Dart enum and
-                          // threw here, so this setting never persisted.
-                          configHandler.setValue(
-                              "desktop", environment.desktop.name);
-                          Navigator.of(context).pop();
-                        });
-                      }),
+            child: ListView.builder(
+              // primary: true,
+              itemCount: DESKTOPS.values.length,
+              itemBuilder: (context, index) {
+                return Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: MintYButton(
+                    text: Text(
+                      getNiceStringOfDesktopsEnum(DESKTOPS.values[index]),
+                      style: MintY.heading4White,
                     ),
-                  );
-                },
-              ),
+                    color: MintY.currentColor,
+                    onPressed: (() {
+                      setState(() {
+                        environment.desktop = DESKTOPS.values[index];
+                        // `.name`, not the enum: the config is written with
+                        // jsonEncode, which cannot encode a Dart enum and
+                        // threw here, so this setting never persisted.
+                        configHandler.setValue(
+                            "desktop", environment.desktop.name);
+                        Navigator.of(context).pop();
+                      });
+                    }),
+                  ),
+                );
+              },
             ),
           ),
         ]),

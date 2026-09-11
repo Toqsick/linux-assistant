@@ -2,9 +2,11 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:linux_assistant/enums/distros.dart';
+import 'package:linux_assistant/helpers/command_helper.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
 import 'package:linux_assistant/layouts/hermes_tokens.dart';
 import 'package:linux_assistant/layouts/mint_y.dart';
+import 'package:linux_assistant/layouts/security_check/security_check_outcome.dart';
 import 'package:linux_assistant/layouts/security_check/security_finding.dart';
 import 'package:linux_assistant/services/linux.dart';
 import 'package:linux_assistant/services/main_search_loader.dart';
@@ -49,26 +51,28 @@ class SecurityCheckContent extends StatefulWidget {
 }
 
 class _SecurityCheckContentState extends State<SecurityCheckContent> {
-  late Future<String> _checkerOutput = _runChecker();
+  late Future<CommandResult> _checkerOutput = _runChecker();
 
-  static Future<String> _runChecker() {
+  static Future<CommandResult> _runChecker() {
     final home = "--home=${Platform.environment['HOME']}";
     final distro = Linux.currentenvironment.distribution;
 
-    String script;
+    // A family name, not a script name. The privileged side picks the file
+    // itself, so no path this page computes crosses into root.
+    String family;
     if (distro == DISTROS.OPENSUSE) {
-      script = "check_security_opensuse.py";
+      family = "opensuse";
     } else if (distro == DISTROS.FEDORA) {
-      script = "check_security_fedora.py";
+      family = "fedora";
     } else if ([DISTROS.ARCH, DISTROS.MANJARO, DISTROS.ENDEAVOUR]
         .contains(distro)) {
-      script = "check_security_arch.py";
+      family = "arch";
     } else {
-      script = "check_security.py";
+      family = "debian";
     }
 
-    return Linux.runPythonScript(script,
-        root: true, arguments: [home], getErrorMessages: true);
+    return Linux.runPrivilegedPythonScriptDetailed(
+        "read_security_report.py", ["--family=$family", home]);
   }
 
   void _reload() {
@@ -79,16 +83,21 @@ class _SecurityCheckContentState extends State<SecurityCheckContent> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return FutureBuilder<String>(
+    return FutureBuilder<CommandResult>(
       future: _checkerOutput,
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return MintYLoadingPage(text: l10n.analysingSystemSecurity);
         }
 
-        final output = snapshot.data!;
-        if (!output.contains("#!script ran successfully.")) {
-          return _rootRequired(context);
+        final result = snapshot.data!;
+        switch (classifySecurityCheck(result)) {
+          case SecurityCheckOutcome.success:
+            break;
+          case SecurityCheckOutcome.noRootRights:
+            return _rootRequired(context);
+          case SecurityCheckOutcome.scriptError:
+            return _scriptFailed(context, result);
         }
 
         return ListView(
@@ -96,7 +105,7 @@ class _SecurityCheckContentState extends State<SecurityCheckContent> {
           children: [
             _readOnlyBanner(context),
             const SizedBox(height: HermesTokens.space4),
-            for (final finding in _buildFindings(context, output))
+            for (final finding in _buildFindings(context, result.output))
               SecurityFindingTile(finding: finding),
           ],
         );
@@ -158,6 +167,75 @@ class _SecurityCheckContentState extends State<SecurityCheckContent> {
               label: Text(l10n.retry),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// Root was granted and the checker still failed. Showing the "you need root
+  /// rights" page here is a lie — and it was this exact combination that hid
+  /// the deb822 parsing crash behind a permissions message.
+  Widget _scriptFailed(BuildContext context, CommandResult result) {
+    final l10n = AppLocalizations.of(context)!;
+    final t = HermesTokens.of(context);
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(HermesTokens.space4),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.securityCheckScriptErrorTitle,
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: HermesTokens.space2),
+              Text(
+                l10n.securityCheckScriptErrorBody,
+                style: TextStyle(color: t.muted, fontSize: 13, height: 1.5),
+              ),
+              const SizedBox(height: HermesTokens.space3),
+              Container(
+                width: double.infinity,
+                constraints: const BoxConstraints(maxHeight: 220),
+                padding: const EdgeInsets.all(HermesTokens.space2),
+                decoration: BoxDecoration(
+                  color: t.codeBg,
+                  borderRadius: BorderRadius.circular(HermesTokens.radiusMd),
+                  border: Border.all(color: t.borderSubtle),
+                ),
+                child: SingleChildScrollView(
+                  child: SelectableText(
+                    checkerErrorExcerpt(result),
+                    style: TextStyle(
+                      fontFamily: "monospace",
+                      fontFamilyFallback: const [
+                        "DejaVu Sans Mono",
+                        "monospace"
+                      ],
+                      fontSize: 11,
+                      color: t.codeText,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: HermesTokens.space3),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton.icon(
+                    onPressed: _reload,
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: Text(l10n.retry),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -235,8 +313,7 @@ class _SecurityCheckContentState extends State<SecurityCheckContent> {
 
     if (sshRunning) {
       findings.add(SecurityFinding(
-        severity:
-            fail2banRunning ? FindingSeverity.info : FindingSeverity.high,
+        severity: fail2banRunning ? FindingSeverity.info : FindingSeverity.high,
         title: l10n.sshFoundOnYourComputer,
         why: l10n.whySsh,
         command: "sudo ss -tlnp | grep ':22'",

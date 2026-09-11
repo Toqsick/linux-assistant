@@ -226,7 +226,7 @@ class AppLocalizationsFi extends AppLocalizations {
 
   @override
   String get thisProcessCouldTakeManyMinutesDependingSoftwareChoosed =>
-      'This process could take many minutes depending on what software configuration you selected...';
+      'Tämä prosessi voi kestää useita minuutteja riippuen valitusta ohjelmistokokoonpanosta...';
 
   @override
   String get selectSpecificActionsOnTheNextSite =>
@@ -568,7 +568,7 @@ class AppLocalizationsFi extends AppLocalizations {
 
   @override
   String get topCPUProcesses =>
-      'Currently most computationally intensive processes';
+      'Tällä hetkellä eniten laskentaa vaativat prosessit';
 
   @override
   String get cpuUsage => 'CPU:n käyttö';
@@ -1134,4 +1134,32 @@ class AppLocalizationsFi extends AppLocalizations {
   @override
   String get whyYay =>
       'AUR helpers install community packages that nobody reviewed for you.';
+
+  @override
+  String deleteSnapshotQuestion(String snapshot) {
+    return 'Poistetaanko tilannevedos \"$snapshot\"?';
+  }
+
+  @override
+  String get deleteSnapshotWarning =>
+      'Tätä ei voi perua. Jos tämä on ainoa tilannevedos, mitään palautettavaa ei jää.';
+
+  @override
+  String get securityCheckScriptErrorTitle => 'Tietoturvatarkistus epäonnistui';
+
+  @override
+  String get securityCheckScriptErrorBody =>
+      'Tarkistusskripti kaatui root-käyttöoikeuden myöntämisen jälkeen. Kyseessä on Linux Assistantin ohjelmavirhe, ei käyttöoikeusongelma. Yksityiskohdat virheraporttia varten:';
+
+  @override
+  String get themeModeSetting => 'Teema';
+
+  @override
+  String get themeModeSystem => 'Järjestelmä';
+
+  @override
+  String get themeModeLight => 'Vaalea';
+
+  @override
+  String get themeModeDark => 'Tumma';
 }

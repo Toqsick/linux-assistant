@@ -248,8 +248,7 @@ class HermesTokens extends ThemeExtension<HermesTokens> {
       final lightness = towardBlack
           ? hsl.lightness * (1 - factor)
           : hsl.lightness + (1 - hsl.lightness) * factor;
-      final candidate =
-          hsl.withLightness(lightness.clamp(0.0, 1.0)).toColor();
+      final candidate = hsl.withLightness(lightness.clamp(0.0, 1.0)).toColor();
       if (contrastRatio(candidate, background) >= target) {
         return candidate;
       }

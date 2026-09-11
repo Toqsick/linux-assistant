@@ -79,7 +79,7 @@ class GreeterIntroduction extends StatelessWidget {
         MintYFeature(
           heading: AppLocalizations.of(context)!.hint,
           description: AppLocalizations.of(context)!
-              .youCanOpenLinuxAssistantWithHotkey(Linux.get_hotkey_modifier()),
+              .youCanOpenLinuxAssistantWithHotkey(Linux.getHotkeyModifier()),
           icon: Icon(
             Icons.lightbulb,
             size: 64,

@@ -1,7 +1,7 @@
-
 import 'dart:io';
 
 import 'package:linux_assistant/helpers/command_helper.dart';
+import 'package:linux_assistant/services/logger.dart';
 
 class Uptime {
   final String unit;
@@ -68,7 +68,7 @@ abstract class LinuxSystem {
     }
     var cmdResult = await CommandHelper.run("/usr/bin/nproc");
     if (!cmdResult.success) {
-      print("Error: ${cmdResult.error}");
+      logError("Command failed", cmdResult.error);
     }
     final count = int.parse(cmdResult.output);
     _cachedThreadCount = count;
@@ -82,7 +82,8 @@ abstract class LinuxSystem {
   /// poll tick, and forking a process to read a virtual file is the kind of
   /// cost that only shows up as battery drain.
   static Future<double> getCpuAverageLoad() async {
-    final double load = parseLoadAvg(await File("/proc/loadavg").readAsString());
+    final double load =
+        parseLoadAvg(await File("/proc/loadavg").readAsString());
     int cpuCount = await getCpuThreadCount();
     return load / cpuCount;
   }

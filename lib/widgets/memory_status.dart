@@ -64,8 +64,7 @@ class _SystemStatusState extends State<SystemStatus> {
           widgets.add(SingleBarChart(
             value: memory.usedRatio,
             fillColor: const Color.fromARGB(255, 193, 119, 243),
-            tooltip:
-                "${_formatGb(memory.usedMb)}/${_formatGb(memory.totalMb)}",
+            tooltip: "${_formatGb(memory.usedMb)}/${_formatGb(memory.totalMb)}",
             text: "RAM",
           ));
           widgets.add(const SizedBox(width: 15));

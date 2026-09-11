@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
 
@@ -5,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:linux_assistant/enums/browsers.dart';
+import 'package:linux_assistant/helpers/command_helper.dart';
 import 'package:linux_assistant/enums/desktops.dart';
 import 'package:linux_assistant/enums/distros.dart';
 import 'package:linux_assistant/enums/softwareManagers.dart';
@@ -19,6 +21,7 @@ import 'package:linux_assistant/services/config_handler.dart';
 import 'package:linux_assistant/services/hashing.dart';
 import 'package:linux_assistant/services/main_search_loader.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
+import 'package:linux_assistant/services/logger.dart';
 
 class Linux {
   static Environment currentenvironment = Environment();
@@ -43,12 +46,20 @@ class Linux {
     // If /app/bin exists, we are running in a flatpak, we need this for every command issued
     if (await Directory("/app/bin").exists()) {
       Linux.currentenvironment.runningInFlatpak = true;
+      // The execution layer needs to know too; it is what inserts
+      // flatpak-spawn in front of every command.
+      CommandHelper.runningInFlatpak = true;
 
-      // That python scripts are also running in flatpak we need to copy them to the home directory .cache folder
-      await runCommand("rm -r $homeFolder/.cache/linux-assistant");
-      await runCommand(
-          "cp -r $additionalFolder $homeFolder/.cache/linux-assistant",
-          hostOnFlatpak: false);
+      // That python scripts are also running in flatpak we need to copy them to the home directory .cache folder.
+      // Argument lists, not command strings: a home folder containing a
+      // space would split "rm -r /home/john doe/…" into two paths and
+      // recursively delete /home/john.
+      await runCommandWithCustomArguments(
+          "rm", ["-r", "$homeFolder/.cache/linux-assistant"],
+          runInShell: false);
+      await runCommandWithCustomArguments(
+          "cp", ["-r", additionalFolder, "$homeFolder/.cache/linux-assistant"],
+          hostOnFlatpak: false, runInShell: false);
       pythonScriptsFolder = "$homeFolder/.cache/linux-assistant/python/";
       additionalFolder = "$homeFolder/.cache/linux-assistant/";
     }
@@ -93,32 +104,61 @@ class Linux {
       Map<String, String>? environment,
       bool hostOnFlatpak = true,
       bool runInShell = true}) async {
-    exec = expandCommand(exec);
-    if (currentenvironment.runningInFlatpak) {
-      arguments.insert(0, exec);
-      exec = "flatpak-spawn";
-      if (hostOnFlatpak) {
-        arguments.insert(0, "--host");
-      }
+    final CommandResult result = await runProcess(exec, arguments,
+        environment: environment,
+        hostOnFlatpak: hostOnFlatpak,
+        runInShell: runInShell);
+
+    if (result.error.isNotEmpty && getErrorMessages) {
+      return result.output + result.error;
     }
+    return result.output;
+  }
+
+  /// Same execution as [runCommandWithCustomArguments], but the caller gets
+  /// the exit code instead of having to guess from the output text.
+  ///
+  /// Prefer this wherever the question is "did it work": the string oracles
+  /// this replaces (`contains("ii  $appCode")`, `contains(" not found.")`,
+  /// `split("\n").length > 5`) answer a different question and answer it
+  /// differently in every locale.
+  static Future<CommandResult> runProcess(String exec, List<String> arguments,
+      {Map<String, String>? environment,
+      bool hostOnFlatpak = true,
+      bool runInShell = true,
+      bool asRoot = false}) async {
+    exec = expandCommand(exec);
+
     // Debug only: the stats poller alone issues several commands every few
     // seconds, so an installed build would write to the journal forever.
     if (kDebugMode) {
-      print("Running linux command: $exec with arguments: $arguments");
+      logInfo("Running linux command: $exec with arguments: $arguments");
     }
-    var result = await Process.run(exec, arguments,
-        runInShell: runInShell, environment: environment);
-    if (result.stderr is String && result.stderr.toString().isNotEmpty) {
-      if (kDebugMode) {
-        print(result.stderr);
-      }
-      if (getErrorMessages) {
-        String returnValue = result.stdout;
-        returnValue += result.stderr;
-        return returnValue;
-      }
+
+    final CommandResult result = await CommandHelper.runWithArguments(
+      exec,
+      arguments,
+      env: environment,
+      asRoot: asRoot,
+      hostOnFlatpak: hostOnFlatpak,
+      runInShell: runInShell,
+    );
+
+    if (kDebugMode && result.error.isNotEmpty) {
+      logError("$exec failed", result.error);
     }
-    return (result.stdout);
+    return result;
+  }
+
+  /// Runs [exec] and reports only whether it succeeded, in the C locale.
+  static Future<bool> commandSucceeds(String exec, List<String> arguments,
+      {Map<String, String>? environment}) async {
+    final CommandResult result = await runProcess(
+      exec,
+      arguments,
+      environment: {"LC_ALL": "C", ...?environment},
+    );
+    return result.success;
   }
 
   /// Expand command for correct use in Linux and Flatpak. Examples:
@@ -204,7 +244,10 @@ class Linux {
         runCommand("cinnamon-settings info");
         break;
       case DESKTOPS.GNOME:
-        runCommand("gnome-control-center info-overview");
+        // "info-overview" was renamed in GNOME 45; the old panel name silently
+        // opened nothing, which went unnoticed because the exit code was
+        // discarded.
+        runCommand("gnome-control-center system");
         break;
       case DESKTOPS.XFCE:
         runCommand("xfce4-about");
@@ -228,32 +271,33 @@ class Linux {
       BuildContext context, VoidCallback callback) async {
     bool doesWarpinatorExist = doesExecutableExist("warpinator");
     if (doesWarpinatorExist) {
-      runCommand("/usr/bin/warpinator");
+      unawaited(runCommand("/usr/bin/warpinator"));
       callback();
       return;
     } else {
-      Navigator.of(context).push(MaterialPageRoute(
+      unawaited(Navigator.of(context).push(MaterialPageRoute(
         builder: (context) => MintYLoadingPage(
           text: AppLocalizations.of(context)!.loading,
         ),
-      ));
+      )));
       doesWarpinatorExist =
           await isSpecificFlatpakInstalled("org.x.Warpinator");
       if (doesWarpinatorExist) {
-        runCommand("/usr/bin/flatpak run org.x.Warpinator");
+        unawaited(runCommand("/usr/bin/flatpak run org.x.Warpinator"));
         callback();
         return;
       }
     }
     // if no warpinator is installed at all:
     await installApplications(["org.x.Warpinator", "warpinator"]);
-    Navigator.of(context).push(MaterialPageRoute(
+    if (!context.mounted) return;
+    unawaited(Navigator.of(context).push(MaterialPageRoute(
       builder: (context) => RunCommandQueue(
           title: AppLocalizations.of(context)!.installX("Warpinator"),
           route: const MainSearchLoader(),
           message: AppLocalizations.of(context)!
               .installingXDescription("Warpinator")),
-    ));
+    )));
   }
 
   /// [callback] is used for clearing and reoading the search.
@@ -261,19 +305,20 @@ class Linux {
       BuildContext context, VoidCallback callback) async {
     bool doesAppExist = doesExecutableExist("hardinfo");
     if (doesAppExist) {
-      runCommand("/usr/bin/hardinfo");
+      unawaited(runCommand("/usr/bin/hardinfo"));
       callback();
       return;
     } else {
       // if app is not installed:
       await installApplications(["hardinfo"]);
-      Navigator.of(context).push(MaterialPageRoute(
+      if (!context.mounted) return;
+      unawaited(Navigator.of(context).push(MaterialPageRoute(
         builder: (context) => RunCommandQueue(
             title: AppLocalizations.of(context)!.installX("HardInfo"),
             route: const MainSearchLoader(),
             message: AppLocalizations.of(context)!
                 .installingXDescription("HardInfo")),
-      ));
+      )));
     }
   }
 
@@ -292,13 +337,14 @@ class Linux {
       if (currentenvironment.desktop == DESKTOPS.KDE) {
         await installApplications(["plasma-applet-redshift-control"]);
       }
-      Navigator.of(context).push(MaterialPageRoute(
+      if (!context.mounted) return;
+      unawaited(Navigator.of(context).push(MaterialPageRoute(
         builder: (context) => RunCommandQueue(
             title: AppLocalizations.of(context)!.installX("Redshift"),
             route: const MainSearchLoader(),
             message: AppLocalizations.of(context)!
                 .installingXDescription("Redshift")),
-      ));
+      )));
     }
   }
 
@@ -328,8 +374,12 @@ class Linux {
 
           commandQueue.add(
             LinuxCommand(
-              command:
-                  "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.APT)} install $appCode -y",
+              argv: [
+                getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.APT),
+                "install",
+                appCode,
+                "-y"
+              ],
               userId: 0,
               environment: {"DEBIAN_FRONTEND": "noninteractive"},
             ),
@@ -346,8 +396,12 @@ class Linux {
 
           commandQueue.add(
             LinuxCommand(
-              command:
-                  "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER)} --non-interactive install $appCode",
+              argv: [
+                getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER),
+                "--non-interactive",
+                "install",
+                appCode
+              ],
               userId: 0,
               environment: {},
             ),
@@ -364,8 +418,12 @@ class Linux {
 
           commandQueue.add(
             LinuxCommand(
-              command:
-                  "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF)} install $appCode -y",
+              argv: [
+                getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF),
+                "install",
+                appCode,
+                "-y"
+              ],
               userId: 0,
               environment: {},
             ),
@@ -382,8 +440,13 @@ class Linux {
 
           commandQueue.add(
             LinuxCommand(
-              command:
-                  "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN)} -S --needed --noconfirm $appCode",
+              argv: [
+                getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN),
+                "-S",
+                "--needed",
+                "--noconfirm",
+                appCode
+              ],
               userId: 0,
               environment: {},
             ),
@@ -394,15 +457,21 @@ class Linux {
         if (softwareManager == SOFTWARE_MANAGERS.FLATPAK) {
           // Check, if package is available:
           String repo = await isFlatpakAvailable(appCode);
-          print("Repo: $repo");
           if (repo == "") {
             continue;
           }
 
           commandQueue.add(
             LinuxCommand(
-              command:
-                  "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.FLATPAK)} install $repo $appCode --system -y --noninteractive",
+              argv: [
+                getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.FLATPAK),
+                "install",
+                repo,
+                appCode,
+                "--system",
+                "-y",
+                "--noninteractive"
+              ],
               userId: 0,
             ),
           );
@@ -418,8 +487,11 @@ class Linux {
 
           commandQueue.add(
             LinuxCommand(
-              command:
-                  "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.SNAP)} install $appCode",
+              argv: [
+                getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.SNAP),
+                "install",
+                appCode
+              ],
               userId: 0,
               environment: {"DEBIAN_FRONTEND": "noninteractive"},
             ),
@@ -431,13 +503,20 @@ class Linux {
   }
 
   static Future<bool> isSpecificFlatpakInstalled(String appCode) async {
+    if (!currentenvironment.installedSoftwareManagers
+        .contains(SOFTWARE_MANAGERS.FLATPAK)) {
+      return false;
+    }
     // Only accept appCodes with two '.' in it. Example: 'com.example.app'
     if (".".allMatches(appCode).length < 2) {
       return false;
     }
-    String flatpakList = await runCommand(
-        "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.FLATPAK)} list --columns=application");
-    return flatpakList.toLowerCase().contains(appCode.toLowerCase());
+    // `flatpak info` exits non-zero for an app that is not installed. The
+    // previous version searched the whole list with `contains`, so
+    // "org.x.Warp" reported itself installed because "org.x.Warpinator" was.
+    return commandSucceeds(
+        getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.FLATPAK),
+        ["info", appCode]);
   }
 
   static Future<bool> isSpecificDebPackageInstalled(appCode) async {
@@ -445,8 +524,16 @@ class Linux {
         .contains(SOFTWARE_MANAGERS.APT)) {
       return false;
     }
-    String output = await runCommand("/usr/bin/dpkg -l $appCode");
-    return output.contains("ii  $appCode");
+    // dpkg-query exits 1 for an unknown package and prints the status for a
+    // known one. The previous version looked for "ii  $appCode" in `dpkg -l`
+    // output, which is a table whose column widths depend on the terminal and
+    // whose header the package name could appear in.
+    final CommandResult result = await runProcess(
+      "/usr/bin/dpkg-query",
+      ["-W", "-f=\${Status}", appCode],
+      environment: {"LC_ALL": "C"},
+    );
+    return result.success && result.output.contains("install ok installed");
   }
 
   static Future<bool> isSpecificZypperPackageInstalled(appCode) async {
@@ -454,10 +541,9 @@ class Linux {
         .contains(SOFTWARE_MANAGERS.ZYPPER)) {
       return false;
     }
-    String output = await runCommand(
-        "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER)} --non-interactive info $appCode",
-        environment: {"LC_ALL": "C"});
-    return output.replaceAll(" ", "").contains("Installed:Yes");
+    // `rpm -q` answers exactly this question with an exit code. Parsing
+    // "Installed: Yes" out of `zypper info` broke on every translated system.
+    return commandSucceeds("/usr/bin/rpm", ["-q", appCode]);
   }
 
   static Future<bool> isSpecificDNFPackageInstalled(appCode) async {
@@ -465,10 +551,7 @@ class Linux {
         .contains(SOFTWARE_MANAGERS.DNF)) {
       return false;
     }
-    String output = await runCommand(
-        "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF)} info $appCode",
-        environment: {"LC_ALL": "C"});
-    return output.replaceAll(" ", "").contains("InstalledPackages");
+    return commandSucceeds("/usr/bin/rpm", ["-q", appCode]);
   }
 
   static Future<bool> isSpecificPacmanPackageInstalled(appCode) async {
@@ -476,23 +559,32 @@ class Linux {
         .contains(SOFTWARE_MANAGERS.PACMAN)) {
       return false;
     }
-    String output = await runCommand(
-        "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN)} -Q $appCode",
-        environment: {"LC_ALL": "C"});
-    return !output.contains("was not found");
+    // Positive test. The previous `!output.contains("was not found")` also
+    // returned true when the command failed to run at all, and a false
+    // positive here queues a removal.
+    return commandSucceeds(
+        getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN),
+        ["-Q", appCode]);
   }
 
   static Future<bool> isSpecificSnapInstalled(appCode) async {
-    String output = await runCommand(
-        "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.SNAP)} info $appCode");
-    return output.contains("installed: ");
+    if (!currentenvironment.installedSoftwareManagers
+        .contains(SOFTWARE_MANAGERS.SNAP)) {
+      return false;
+    }
+    // `snap list <name>` exits 1 when the snap is not installed. `snap info`
+    // succeeds for anything in the store, and its output contains
+    // "installed: " only when it happens to be installed locally — a
+    // distinction the old substring check did not make reliably.
+    return commandSucceeds(
+        getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.SNAP),
+        ["list", appCode]);
   }
 
   /// Tries to uninstall all appCodes.
   /// If you don't specify the softwareManager it will be tried to remove the application with all Software Managers
   static Future<void> removeApplications(List<String> appCodes,
       {SOFTWARE_MANAGERS? softwareManager}) async {
-    print(appCodes);
     for (String appCode in appCodes) {
       if (softwareManager == null || softwareManager == SOFTWARE_MANAGERS.APT) {
         // Deb Package
@@ -504,8 +596,12 @@ class Linux {
           commandQueue.add(
             LinuxCommand(
               userId: 0,
-              command:
-                  "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.APT)} remove $appCode -y",
+              argv: [
+                getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.APT),
+                "remove",
+                appCode,
+                "-y"
+              ],
               environment: {"DEBIAN_FRONTEND": "noninteractive"},
             ),
           );
@@ -513,8 +609,11 @@ class Linux {
           commandQueue.add(
             LinuxCommand(
               userId: 0,
-              command:
-                  "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.APT)} autoremove -y",
+              argv: [
+                getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.APT),
+                "autoremove",
+                "-y"
+              ],
               environment: {"DEBIAN_FRONTEND": "noninteractive"},
             ),
           );
@@ -532,8 +631,12 @@ class Linux {
           commandQueue.add(
             LinuxCommand(
               userId: 0,
-              command:
-                  "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER)} --non-interactive remove $appCode",
+              argv: [
+                getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER),
+                "--non-interactive",
+                "remove",
+                appCode
+              ],
             ),
           );
         }
@@ -548,8 +651,12 @@ class Linux {
           commandQueue.add(
             LinuxCommand(
               userId: 0,
-              command:
-                  "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF)} remove $appCode -y",
+              argv: [
+                getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF),
+                "remove",
+                appCode,
+                "-y"
+              ],
             ),
           );
         }
@@ -566,8 +673,12 @@ class Linux {
           commandQueue.add(
             LinuxCommand(
               userId: 0,
-              command:
-                  "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN)} -Rs --noconfirm $appCode",
+              argv: [
+                getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN),
+                "-Rs",
+                "--noconfirm",
+                appCode
+              ],
             ),
           );
         }
@@ -577,19 +688,29 @@ class Linux {
       if (softwareManager == null ||
           softwareManager == SOFTWARE_MANAGERS.FLATPAK) {
         bool isFlatpakInstalled = await isSpecificFlatpakInstalled(appCode);
-        print(isFlatpakInstalled);
         if ((softwareManager == null ||
                 softwareManager == SOFTWARE_MANAGERS.FLATPAK) &&
             isFlatpakInstalled) {
           commandQueue.add(LinuxCommand(
             userId: currentenvironment.currentUserId,
-            command:
-                "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.FLATPAK)} remove $appCode -y --noninteractive",
+            argv: [
+              getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.FLATPAK),
+              "remove",
+              appCode,
+              "-y",
+              "--noninteractive"
+            ],
           ));
           commandQueue.add(LinuxCommand(
             userId: 0,
-            command:
-                "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.FLATPAK)} uninstall $appCode -y --noninteractive --system",
+            argv: [
+              getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.FLATPAK),
+              "uninstall",
+              appCode,
+              "-y",
+              "--noninteractive",
+              "--system"
+            ],
           ));
         }
       }
@@ -604,8 +725,11 @@ class Linux {
           commandQueue.add(
             LinuxCommand(
               userId: 0,
-              command:
-                  "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.SNAP)} remove $appCode",
+              argv: [
+                getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.SNAP),
+                "remove",
+                appCode
+              ],
             ),
           );
         }
@@ -683,23 +807,24 @@ class Linux {
   }
 
   static Future<bool> isZypperPackageAvailable(String appCode) async {
-    String output = await runCommand(
-        "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER)} info $appCode");
-    return !output.contains(" not found.");
+    // `zypper info` on an unknown package still exits 0 and only says so in
+    // prose, which the old `!contains(" not found.")` read in English only.
+    // `zypper search --match-exact` exits 104 when nothing matches.
+    return commandSucceeds(
+        getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER),
+        ["--non-interactive", "search", "--match-exact", appCode]);
   }
 
   static Future<bool> isDNFPackageAvailable(String appCode) async {
-    String output = await runCommand(
-        "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF)} info $appCode",
-        environment: {"LC_ALL": "C"});
-    return !output.toLowerCase().contains("no matching packages to list");
+    return commandSucceeds(
+        getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF),
+        ["info", appCode]);
   }
 
   static Future<bool> isPacmanPackageAvailable(String appCode) async {
-    String output = await runCommand(
-        "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN)} -Si $appCode",
-        environment: {"LC_ALL": "C"});
-    return !output.contains("was not found");
+    return commandSucceeds(
+        getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN),
+        ["-Si", appCode]);
   }
 
   /// returns the source under which the Flatpak is available, otherwise empty String
@@ -769,10 +894,13 @@ class Linux {
   /// After calling this function the command queue should be run
   static Future<void> setUpFlatpak() async {
     await ensureApplicationInstallation(["flatpak"]);
-    commandQueue.add(LinuxCommand(
-        userId: 0,
-        command:
-            "flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo"));
+    commandQueue.add(LinuxCommand(userId: 0, argv: [
+      "flatpak",
+      "remote-add",
+      "--if-not-exists",
+      "flathub",
+      "https://flathub.org/repo/flathub.flatpakrepo"
+    ]));
     // We set this temporally to easily add flatpaks to the system. It will be written to config at next startup (if the installation of flatpak really succeded)
     Linux.currentenvironment.installedSoftwareManagers
         .add(SOFTWARE_MANAGERS.FLATPAK);
@@ -812,7 +940,10 @@ class Linux {
 
     await Linux.runCommandWithCustomArguments(
       "bash",
-      ["-c", "find '${home.replaceAll("'", r"'\''")}' -maxdepth $depth -type d"],
+      [
+        "-c",
+        "find '${home.replaceAll("'", r"'\''")}' -maxdepth $depth -type d"
+      ],
       environment: {"PWD": "/"},
     ).then((value) {
       folders =
@@ -1094,8 +1225,6 @@ class Linux {
         return "/usr/bin/dnf";
       case SOFTWARE_MANAGERS.PACMAN:
         return "/usr/bin/pacman";
-      default:
-        return "";
     }
   }
 
@@ -1124,7 +1253,7 @@ class Linux {
   }
 
   /// Only adds commands to the command queue
-  static void installMultimediaCodecs() async {
+  static Future<void> installMultimediaCodecs() async {
     switch (currentenvironment.distribution) {
       case DISTROS.DEBIAN:
       case DISTROS.MXLINUX:
@@ -1137,29 +1266,39 @@ class Linux {
         //     environment: {"DEBIAN_FRONTEND": "noninteractive"});
 
         // Currently do not add other repositories without warning, so we won't install libdvd-pkg
-        commandQueue.add(LinuxCommand(
-            userId: 0,
-            command:
-                "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.APT)} install vlc libavcodec-extra -y",
-            environment: {"DEBIAN_FRONTEND": "noninteractive"}));
+        commandQueue.add(LinuxCommand(userId: 0, argv: [
+          getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.APT),
+          "install",
+          "vlc",
+          "libavcodec-extra",
+          "-y"
+        ], environment: {
+          "DEBIAN_FRONTEND": "noninteractive"
+        }));
         break;
       case DISTROS.LINUX_MINT:
       case DISTROS.LMDE:
-        commandQueue.add(LinuxCommand(
-            userId: 0,
-            command:
-                "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.APT)} install mint-meta-codecs -y",
-            environment: {"DEBIAN_FRONTEND": "noninteractive"}));
+        commandQueue.add(LinuxCommand(userId: 0, argv: [
+          getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.APT),
+          "install",
+          "mint-meta-codecs",
+          "-y"
+        ], environment: {
+          "DEBIAN_FRONTEND": "noninteractive"
+        }));
         break;
       case DISTROS.UBUNTU:
       case DISTROS.POPOS:
       case DISTROS.ZORINOS:
       case DISTROS.KDENEON:
-        commandQueue.add(LinuxCommand(
-            userId: 0,
-            command:
-                "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.APT)} install ubuntu-restricted-extras -y",
-            environment: {"DEBIAN_FRONTEND": "noninteractive"}));
+        commandQueue.add(LinuxCommand(userId: 0, argv: [
+          getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.APT),
+          "install",
+          "ubuntu-restricted-extras",
+          "-y"
+        ], environment: {
+          "DEBIAN_FRONTEND": "noninteractive"
+        }));
         break;
       case DISTROS.OPENSUSE:
         String file = await getEtcOsRelease();
@@ -1168,8 +1307,15 @@ class Linux {
         if (tumbleweed) {
           commandQueue.add(LinuxCommand(
             userId: 0,
-            command:
-                "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER)} --non-interactive addrepo -cfp 90 'https://ftp.gwdg.de/pub/linux/misc/packman/suse/openSUSE_Tumbleweed/' packman",
+            argv: [
+              getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER),
+              "--non-interactive",
+              "addrepo",
+              "-cfp",
+              "90",
+              "https://ftp.gwdg.de/pub/linux/misc/packman/suse/openSUSE_Tumbleweed/",
+              "packman"
+            ],
           ));
         } else {
           // LEAP:
@@ -1179,25 +1325,55 @@ class Linux {
           // }
           commandQueue.add(LinuxCommand(
             userId: 0,
-            command:
-                "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER)} --non-interactive addrepo -cfp 90 'https://ftp.gwdg.de/pub/linux/misc/packman/suse/openSUSE_Leap_\$releasever/' packman",
+            argv: [
+              getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER),
+              "--non-interactive",
+              "addrepo",
+              "-cfp",
+              "90",
+              "https://ftp.gwdg.de/pub/linux/misc/packman/suse/openSUSE_Leap_\$releasever/",
+              "packman"
+            ],
           ));
         }
 
         commandQueue.add(LinuxCommand(
           userId: 0,
-          command:
-              "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER)} --non-interactive refresh",
+          argv: [
+            getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER),
+            "--non-interactive",
+            "refresh"
+          ],
         ));
         commandQueue.add(LinuxCommand(
           userId: 0,
-          command:
-              "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER)} --non-interactive dist-upgrade --from packman --allow-vendor-change",
+          argv: [
+            getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER),
+            "--non-interactive",
+            "dist-upgrade",
+            "--from",
+            "packman",
+            "--allow-vendor-change"
+          ],
         ));
         commandQueue.add(LinuxCommand(
           userId: 0,
-          command:
-              "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER)} --non-interactive install --from packman ffmpeg gstreamer-plugins-{good,bad,ugly,libav} libavcodec-full vlc-codecs",
+          argv: [
+            getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER),
+            "--non-interactive",
+            "install",
+            "--from",
+            "packman",
+            "ffmpeg",
+            // Written as gstreamer-plugins-{good,bad,ugly,libav} before:
+            // brace expansion is bash, and there is no bash in this path.
+            "gstreamer-plugins-good",
+            "gstreamer-plugins-bad",
+            "gstreamer-plugins-ugly",
+            "gstreamer-plugins-libav",
+            "libavcodec-full",
+            "vlc-codecs"
+          ],
         ));
 
         break;
@@ -1207,18 +1383,40 @@ class Linux {
         // sudo dnf group upgrade --with-optional Multimedia
         commandQueue.add(LinuxCommand(
           userId: 0,
-          command:
-              "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF)} install gstreamer1-plugins-{bad-*,good-*,base} gstreamer1-plugin-openh264 gstreamer1-plugin-libav --exclude=gstreamer1-plugins-bad-free-devel -y",
+          argv: [
+            getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF),
+            "install",
+            // Braces expanded here (see above). The remaining `*` is dnf's
+            // own glob, which it applies to package names itself.
+            "gstreamer1-plugins-bad-*",
+            "gstreamer1-plugins-good-*",
+            "gstreamer1-plugins-base",
+            "gstreamer1-plugin-openh264",
+            "gstreamer1-plugin-libav",
+            "--exclude=gstreamer1-plugins-bad-free-devel",
+            "-y"
+          ],
         ));
         commandQueue.add(LinuxCommand(
           userId: 0,
-          command:
-              "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF)} install lame* --exclude=lame-devel -y",
+          argv: [
+            getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF),
+            "install",
+            "lame*",
+            "--exclude=lame-devel",
+            "-y"
+          ],
         ));
         commandQueue.add(LinuxCommand(
           userId: 0,
-          command:
-              "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF)} group upgrade --with-optional Multimedia -y",
+          argv: [
+            getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF),
+            "group",
+            "upgrade",
+            "--with-optional",
+            "Multimedia",
+            "-y"
+          ],
         ));
         break;
       case DISTROS.ARCH:
@@ -1226,40 +1424,109 @@ class Linux {
       case DISTROS.ENDEAVOUR:
         commandQueue.add(LinuxCommand(
           userId: 0,
-          command:
-              "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN)} -S --needed --noconfirm vlc gstreamer libdvdcss libdvdread libdvdnav ffmpeg gst-plugins-base gst-plugins-good gst-plugins-bad gst-plugins-ugly",
+          argv: [
+            getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN),
+            "-S",
+            "--needed",
+            "--noconfirm",
+            "vlc",
+            "gstreamer",
+            "libdvdcss",
+            "libdvdread",
+            "libdvdnav",
+            "ffmpeg",
+            "gst-plugins-base",
+            "gst-plugins-good",
+            "gst-plugins-bad",
+            "gst-plugins-ugly"
+          ],
         ));
         break;
-      default:
     }
   }
 
+  /// The only two scripts this app is allowed to run as root.
+  ///
+  /// Each has its own polkit action in
+  /// `org.linux-assistant.operations.policy`, annotated with its own
+  /// `exec.path`. Anything not on this list has no action and pkexec would
+  /// refuse it — the check here exists so a mistake shows up as an assertion
+  /// during development rather than as a confusing dialog on a user's machine.
+  static const List<String> _privilegedEntryPoints = [
+    "run_multiple_commands.py",
+    "read_security_report.py",
+  ];
+
   /// Python script has to be in the additional/python folder.
   /// Example: [filename] = example.py
+  ///
+  /// Runs as the current user. Root goes through [runPrivilegedPythonScript].
   static Future<String> runPythonScript(String filename,
-      {bool root = false,
-      List<String> arguments = const [],
-      bool getErrorMessages = true}) async {
-    List<String> commandList = [];
-    String executable = "python3";
-    if (root) {
-      executable = "pkexec";
+      {List<String> arguments = const [], bool getErrorMessages = true}) async {
+    List<String> commandList = ["$pythonScriptsFolder$filename", ...arguments];
 
-      // We don't need to add python3 to the command list,
-      // because pkexec will run the command as root and root has python3 installed
-      // also pkexec won't work correctly because of the path of the executable
-      // (it would display a wrong message to the user)
-      // commandList.add("/usr/bin/python3");
+    logInfo("Run python script: python3 $commandList");
+
+    // No shell: arguments are --key=value pairs that must reach the script
+    // verbatim. The keyword search used to hand-shell-quote its argument,
+    // which a keyword containing a single quote unwound into command
+    // execution. expandCommand yields an absolute python3 path, which is
+    // the documented precondition for turning the shell off.
+    return runCommandWithCustomArguments("python3", commandList,
+        getErrorMessages: getErrorMessages,
+        environment: Platform.environment,
+        runInShell: false);
+  }
+
+  /// Runs one of the [_privilegedEntryPoints] as root through pkexec.
+  ///
+  /// pkexec is given the script itself, not a launcher. The previous version
+  /// always invoked `run_script.py <name>`, which meant one polkit action
+  /// covered every script in the directory and the password dialog could not
+  /// name what it was authorising.
+  static Future<String> runPrivilegedPythonScript(String filename,
+      {List<String> arguments = const [], bool getErrorMessages = true}) async {
+    assert(_privilegedEntryPoints.contains(filename),
+        "$filename has no polkit action; add one before calling it as root");
+
+    List<String> commandList = ["$pythonScriptsFolder$filename", ...arguments];
+
+    logInfo("Run privileged python script: pkexec $commandList");
+
+    // No shell: with runInShell the argv is space-joined unquoted, so a HOME
+    // like "/home/john doe" would truncate --home=… mid-path (and any shell
+    // metacharacter in it would run). expandCommand yields absolute paths,
+    // which is the documented precondition for turning the shell off.
+    final result = await runProcess("pkexec", commandList,
+        environment: Platform.environment, runInShell: false);
+    if (result.error.isNotEmpty && getErrorMessages) {
+      return result.output + result.error;
     }
-    commandList.add("${pythonScriptsFolder}run_script.py");
-    commandList.add(filename);
+    return result.output;
+  }
 
-    commandList.addAll(arguments);
+  /// Same script and polkit action as [runPrivilegedPythonScript], but the
+  /// caller sees the exit code.
+  ///
+  /// pkexec exits 126 when the dialog is dismissed and 127 when authorization
+  /// is denied, while a checker that crashed after a successful authorization
+  /// exits with its own non-zero code. Without the exit code those two look
+  /// identical to the caller, which is how the security page ended up blaming
+  /// missing root rights for a script bug.
+  static Future<CommandResult> runPrivilegedPythonScriptDetailed(
+      String filename, List<String> arguments) async {
+    assert(_privilegedEntryPoints.contains(filename),
+        "$filename has no polkit action; add one before calling it as root");
 
-    print("Run python script: $executable $commandList");
+    final List<String> commandList = [
+      "$pythonScriptsFolder$filename",
+      ...arguments
+    ];
 
-    return runCommandWithCustomArguments(executable, commandList,
-        getErrorMessages: getErrorMessages, environment: Platform.environment);
+    logInfo("Run privileged python script: pkexec $commandList");
+
+    return runProcess("pkexec", commandList,
+        environment: Platform.environment, runInShell: false);
   }
 
   /// Restricted to the display class on purpose. A bare `lshw` probes PCI, USB,
@@ -1288,16 +1555,16 @@ class Linux {
       await updateAllPackages();
     }
     if (installMultimediaCodecs_) {
-      installMultimediaCodecs();
+      await installMultimediaCodecs();
     }
     if (setupAutomaticSnapshots) {
       await enableAutomaticSnapshots();
     }
     if (installNvidiaDriversAutomatically) {
-      commandQueue.add(LinuxCommand(
-          userId: 0,
-          command:
-              "python3 ${executableFolder}additional/python/install_nvidia_driver.py"));
+      commandQueue.add(LinuxCommand(userId: 0, argv: [
+        "python3",
+        "${executableFolder}additional/python/install_nvidia_driver.py"
+      ]));
     }
     if (setupAutomaticUpdates) {
       await enableAutomaticUpdates();
@@ -1310,28 +1577,39 @@ class Linux {
       case DISTROS.OPENSUSE:
         await ensureApplicationInstallation(
             ["yast2-online-update-configuration"]);
-        commandQueue.add(LinuxCommand(
-            userId: 0,
-            command:
-                "ln -s /usr/lib/YaST2/bin/online_update /etc/cron.daily/"));
+        commandQueue.add(LinuxCommand(userId: 0, argv: [
+          "ln",
+          "-s",
+          "/usr/lib/YaST2/bin/online_update",
+          "/etc/cron.daily/"
+        ]));
         break;
       default:
-        commandQueue.add(LinuxCommand(
-            userId: 0,
-            command:
-                "python3 ${executableFolder}additional/python/setup_automatic_updates_debian.py"));
+        commandQueue.add(LinuxCommand(userId: 0, argv: [
+          "python3",
+          "${executableFolder}additional/python/setup_automatic_updates_debian.py"
+        ]));
         if (currentenvironment.distribution == DISTROS.LINUX_MINT) {
           /// Set com.linuxmint.updates auto-update-cinnamon-spices true
-          commandQueue.add(LinuxCommand(
-              userId: currentenvironment.currentUserId,
-              command:
-                  "gsettings set com.linuxmint.updates auto-update-cinnamon-spices true"));
+          commandQueue.add(
+              LinuxCommand(userId: currentenvironment.currentUserId, argv: [
+            "gsettings",
+            "set",
+            "com.linuxmint.updates",
+            "auto-update-cinnamon-spices",
+            "true"
+          ]));
 
           /// Set com.linuxmint.updates auto-update-flatpaks true
           commandQueue.add(LinuxCommand(
               userId: currentenvironment.currentUserId,
-              command:
-                  "gsettings set com.linuxmint.updates auto-update-flatpaks true"));
+              argv: [
+                "gsettings",
+                "set",
+                "com.linuxmint.updates",
+                "auto-update-flatpaks",
+                "true"
+              ]));
         }
     }
   }
@@ -1344,10 +1622,11 @@ class Linux {
         .contains(currentenvironment.distribution)) {
       additional = "--daily";
     }
-    commandQueue.add(LinuxCommand(
-        userId: 0,
-        command:
-            "python3 ${executableFolder}additional/python/setup_automatic_snapshots.py $additional"));
+    commandQueue.add(LinuxCommand(userId: 0, argv: [
+      "python3",
+      "${executableFolder}additional/python/setup_automatic_snapshots.py",
+      additional
+    ]));
   }
 
   /// Only appends commands to [commandQueue]
@@ -1356,20 +1635,24 @@ class Linux {
         .contains(SOFTWARE_MANAGERS.APT)) {
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command: "/usr/bin/apt update",
+        argv: ["/usr/bin/apt", "update"],
         environment: {"DEBIAN_FRONTEND": "noninteractive"},
       ));
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command: "/usr/bin/apt dist-upgrade -y",
+        argv: ["/usr/bin/apt", "dist-upgrade", "-y"],
         environment: {"DEBIAN_FRONTEND": "noninteractive"},
       ));
     } else if (currentenvironment.installedSoftwareManagers
         .contains(SOFTWARE_MANAGERS.DNF)) {
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command:
-            "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF)} update --refresh -y",
+        argv: [
+          getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF),
+          "update",
+          "--refresh",
+          "-y"
+        ],
       ));
     } else if (currentenvironment.installedSoftwareManagers
         .contains(SOFTWARE_MANAGERS.ZYPPER)) {
@@ -1378,23 +1661,32 @@ class Linux {
         // Tumbleweed
         commandQueue.add(LinuxCommand(
           userId: 0,
-          command:
-              "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER)} --non-interactive dup",
+          argv: [
+            getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER),
+            "--non-interactive",
+            "dup"
+          ],
         ));
       } else {
         // Leap or other
         commandQueue.add(LinuxCommand(
           userId: 0,
-          command:
-              "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER)} --non-interactive up",
+          argv: [
+            getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER),
+            "--non-interactive",
+            "up"
+          ],
         ));
       }
     } else if (currentenvironment.installedSoftwareManagers
         .contains(SOFTWARE_MANAGERS.PACMAN)) {
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command:
-            "${getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN)} -Syu --noconfirm",
+        argv: [
+          getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN),
+          "-Syu",
+          "--noconfirm"
+        ],
       ));
     }
 
@@ -1402,7 +1694,7 @@ class Linux {
         .contains(SOFTWARE_MANAGERS.FLATPAK)) {
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command: "/usr/bin/flatpak upgrade -y",
+        argv: ["/usr/bin/flatpak", "upgrade", "-y"],
         environment: {"DEBIAN_FRONTEND": "noninteractive"},
       ));
     }
@@ -1411,7 +1703,7 @@ class Linux {
         .contains(SOFTWARE_MANAGERS.SNAP)) {
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command: "/usr/bin/snap refresh",
+        argv: ["/usr/bin/snap", "refresh"],
         environment: {"DEBIAN_FRONTEND": "noninteractive"},
       ));
     }
@@ -1432,9 +1724,7 @@ class Linux {
     for (String e in list) {
       String fileName = e.split("/").last;
       ActionEntry actionEntry = ActionEntry(
-          name: fileName,
-          description: "$openLabel $e",
-          action: "openfile:$e");
+          name: fileName, description: "$openLabel $e", action: "openfile:$e");
       actionEntry.priority = -5;
       actionEntries.add(actionEntry);
     }
@@ -1442,31 +1732,38 @@ class Linux {
     await ActionEntryListService.addEntries(actionEntries);
   }
 
+  /// Serializes [commandQueue] for the root helper.
+  ///
+  /// One JSON object per line: `{"uid": 0, "argv": [...], "env": {...},
+  /// "shell": false}`. The previous format was a hand-rolled
+  /// `"uid";"cmd";"K='V'";` line that the Python side split on `";"` and `=`,
+  /// so it lost data on any value containing a quote or an equals sign — and
+  /// the command itself arrived as a string that had to be re-parsed.
+  @visibleForTesting
+  static String serializeCommandQueue(List<LinuxCommand> queue) {
+    return queue.map((command) => jsonEncode(command.toJson())).join("\n");
+  }
+
   static Future<String> executeCommandQueue() async {
     if (commandQueue.isEmpty) {
       return "No actions in queue.";
     }
 
-    String string = "";
-    for (LinuxCommand command in commandQueue) {
-      String line = "\"${command.userId}\";\"${command.command}\";";
-      command.environment?.forEach((key, value) {
-        line += "\"$key='$value'\";";
-      });
-      string += "$line\n";
-    }
+    String string = serializeCommandQueue(commandQueue);
 
-    // Example of a line:
-    // "0";"apt update";"DEBIAN_NONINTERACTIVE='true'";
-
+    // Not a security measure: both the path and the hash are argv from the
+    // unprivileged caller, so anyone able to pass one can pass the other. It
+    // catches a truncated or half-written file, nothing more.
     String checksum = Hashing.getMd5OfString(string);
 
     String filepath = '$homeFolder/.cache/linux_assistant_commands';
     File file = File(filepath);
-    file.writeAsString(string);
+    // Awaited: the root helper re-hashes this file, and racing the write is
+    // what produced the sporadic "Checksum test failed!".
+    await file.writeAsString(string, flush: true);
 
-    String output = await runPythonScript("run_multiple_commands.py",
-        arguments: ["--md5=$checksum", "--path=$filepath"], root: true);
+    String output = await runPrivilegedPythonScript("run_multiple_commands.py",
+        arguments: ["--md5=$checksum", "--path=$filepath"]);
 
     return output;
   }
@@ -1487,12 +1784,18 @@ class Linux {
       return [];
     }
     String output = await runPythonScript("search_available_apt_packages.py",
-        arguments: ["--keyword='$keyword'"], getErrorMessages: false);
+        arguments: ["--keyword=$keyword"], getErrorMessages: false);
     output = output.trim();
     List<String> lines = output.split("\n");
 
     // Cancel search, if too many search results.
     if (lines.length > 100) {
+      return [];
+    }
+
+    // The apt search runs a Python subprocess; the search field that asked for
+    // these entries can be gone by the time they arrive.
+    if (!context.mounted) {
       return [];
     }
 
@@ -1537,9 +1840,9 @@ class Linux {
     List<ActionEntry> results = [];
     for (String line in lines) {
       // Get the only the first word of the line (with regex), not with .split(" ")
-      String snap_name = line.split(" ")[0];
+      String snapName = line.split(" ")[0];
       // print the Unicode code point of every single character
-      if (snap_name.trim() == "") {
+      if (snapName.trim() == "") {
         continue;
       }
       results.add(ActionEntry(
@@ -1548,9 +1851,9 @@ class Linux {
           size: 48,
           color: MintY.currentColor,
         ),
-        name: "Install $snap_name",
+        name: "Install $snapName",
         description: "Install via snap",
-        action: "snap-install:$snap_name",
+        action: "snap-install:$snapName",
         priority: -21,
       ));
     }
@@ -1571,9 +1874,6 @@ class Linux {
     if (output.contains("No matches found")) {
       return [];
     }
-
-    print(output);
-    print(lines.length);
 
     if (lines.length > 100) {
       return [];
@@ -1952,7 +2252,7 @@ class Linux {
         await installedZypperPackagesFuture;
     for (List<String> zypperEntry in installedZypperPackages) {
       if (zypperEntry.length < 2) {
-        print("Wrong zypper entry: $zypperEntry");
+        logInfo("Wrong zypper entry: $zypperEntry");
         continue;
       }
       returnValue.add(
@@ -1974,8 +2274,8 @@ class Linux {
     /// DNF
     List<List<String>> installedDNFPackages = await installedDNFPackagesFuture;
     for (List<String> dnfEntry in installedDNFPackages) {
-      if (dnfEntry.length < 1) {
-        print("Wrong dnf entry: $dnfEntry");
+      if (dnfEntry.isEmpty) {
+        logInfo("Wrong dnf entry: $dnfEntry");
         continue;
       }
       returnValue.add(
@@ -2019,7 +2319,7 @@ class Linux {
     /// flatpak entry: app-id, app name, description
     for (List<String> flatpakEntry in installedFlatpaks) {
       if (flatpakEntry.length < 3) {
-        print("Wrong flatpak entry: $flatpakEntry");
+        logInfo("Wrong flatpak entry: $flatpakEntry");
         continue;
       }
       returnValue.add(
@@ -2198,20 +2498,31 @@ class Linux {
         } else {
           return false;
         }
-      default:
-        return false;
     }
   }
 
-  static void activateSystemHotkeyForLinuxAssistant() {
-    if (get_hotkey_modifier() == "<Alt>") {
-      Linux.runPythonScript("setup_keybinding.py", arguments: ["--alt"]);
-    } else {
-      Linux.runPythonScript("setup_keybinding.py");
+  /// Registers the "bring me up" shortcut with the desktop.
+  ///
+  /// Returns whether the script reported success. It used to be `static void`
+  /// with the Future dropped on the floor, so a desktop the script does not
+  /// support — or a `gi` import that failed — looked exactly like success.
+  static Future<bool> activateSystemHotkeyForLinuxAssistant() async {
+    final CommandResult result = await runProcess(
+      "python3",
+      [
+        "${pythonScriptsFolder}setup_keybinding.py",
+        if (getHotkeyModifier() == "<Alt>") "--alt",
+      ],
+      environment: Platform.environment,
+    );
+
+    if (!result.success) {
+      logError("Registering the desktop shortcut failed", result.error);
     }
+    return result.success;
   }
 
-  static String get_hotkey_modifier() {
+  static String getHotkeyModifier() {
     if (currentenvironment.desktop == DESKTOPS.KDE) {
       return "<Alt>";
     }
@@ -2221,7 +2532,9 @@ class Linux {
       case DISTROS.UBUNTU:
         return "<Alt>";
       default:
-        return "<Super/Windows> ";
+        // No trailing space: every caller interpolates this into "{modifier}
+        // + <Q>", so the old value rendered a double space.
+        return "<Super/Windows>";
     }
   }
 
@@ -2254,46 +2567,48 @@ class Linux {
 
   /// removes all rights for others at the home folder
   static Future<void> fixHomeFolderPermissions() async {
-    runCommandWithCustomArguments(
+    unawaited(runCommandWithCustomArguments(
       "/usr/bin/chmod",
       ["o-rwx", Linux.getHomeDirectory()],
-    );
-    runCommandWithCustomArguments(
+    ));
+    unawaited(runCommandWithCustomArguments(
       "/usr/bin/chmod",
       ["g-w", Linux.getHomeDirectory()],
-    );
+    ));
   }
 
   static Future<void> openAdditionalSoftwareSourcesSettings() async {
     if (File("/usr/bin/software-properties-gtk").existsSync()) {
-      runCommand("/usr/bin/software-properties-gtk");
+      unawaited(runCommand("/usr/bin/software-properties-gtk"));
       return;
     }
     switch (currentenvironment.distribution) {
       case DISTROS.UBUNTU:
       case DISTROS.ZORINOS:
-        runCommand("/usr/bin/software-properties-gtk");
+        unawaited(runCommand("/usr/bin/software-properties-gtk"));
         break;
       case DISTROS.LINUX_MINT:
       case DISTROS.LMDE:
-        runCommandWithCustomArguments("/usr/bin/pkexec", ["mintsources"]);
+        unawaited(
+            runCommandWithCustomArguments("/usr/bin/pkexec", ["mintsources"]));
         break;
       case DISTROS.OPENSUSE:
-        runCommandWithCustomArguments(
-            "xdg-su", ["-c", "/sbin/yast2 repositories"]);
+        unawaited(runCommandWithCustomArguments(
+            "xdg-su", ["-c", "/sbin/yast2 repositories"]));
         break;
       case DISTROS.MXLINUX:
-        runCommand("/usr/bin/mx-repo-manager");
+        unawaited(runCommand("/usr/bin/mx-repo-manager"));
         break;
       case DISTROS.KDENEON:
-        runCommand("/usr/bin/plasma-discover");
+        unawaited(runCommand("/usr/bin/plasma-discover"));
         break;
       case DISTROS.DEBIAN:
       case DISTROS.POPOS:
-        runCommandWithCustomArguments("xdg-open", ["/etc/apt/sources.list.d/"]);
+        unawaited(runCommandWithCustomArguments(
+            "xdg-open", ["/etc/apt/sources.list.d/"]));
         break;
       case DISTROS.FEDORA:
-        runCommand("gnome-software");
+        unawaited(runCommand("gnome-software"));
         break;
       default:
     }
@@ -2301,6 +2616,12 @@ class Linux {
 
   static Future<bool> isFileExecutable(String filePath) async {
     var stat = await FileStat.stat(filePath);
+    // stat of a deleted path reports mode 0, and toRadixString(8) of that is
+    // "0" — too short for the substring below. Happens when a recent-files
+    // entry points at a file removed since indexing.
+    if (stat.type == FileSystemEntityType.notFound) {
+      return false;
+    }
     var mode = stat.mode.toRadixString(8).substring(3);
 
     // Example values for variable 'mode': '755', '644' etc.
@@ -2310,12 +2631,14 @@ class Linux {
         int.parse(mode[2]) % 2 != 0;
   }
 
-  static void runExecutableInTerminal(String executablePath) async {
+  static Future<void> runExecutableInTerminal(String executablePath) async {
     String term = await Linux.runPythonScript("get_terminal_emulator.py");
     if ((term = term.trim()) == "gnome-terminal") {
-      Linux.runCommandWithCustomArguments(term, ["--", executablePath]);
+      unawaited(
+          Linux.runCommandWithCustomArguments(term, ["--", executablePath]));
     } else {
-      Linux.runCommandWithCustomArguments(term, ["-e", executablePath]);
+      unawaited(
+          Linux.runCommandWithCustomArguments(term, ["-e", executablePath]));
     }
   }
 
@@ -2433,7 +2756,7 @@ class Linux {
       } else {
         commandQueue.add(LinuxCommand(
           userId: currentenvironment.currentUserId,
-          command: "k4dirstat $path",
+          argv: ["k4dirstat", "$path"],
         ));
         Navigator.of(context).push(MaterialPageRoute(
           builder: (context) => RunCommandQueue(
@@ -2448,7 +2771,7 @@ class Linux {
       } else {
         commandQueue.add(LinuxCommand(
           userId: currentenvironment.currentUserId,
-          command: "baobab $path",
+          argv: ["baobab", "$path"],
         ));
         Navigator.of(context).push(MaterialPageRoute(
           builder: (context) => RunCommandQueue(
@@ -2465,12 +2788,12 @@ class Linux {
           .contains(SOFTWARE_MANAGERS.APT)) {
         commandQueue.add(LinuxCommand(
           userId: 0,
-          command: "/usr/bin/apt autoremove -y",
+          argv: ["/usr/bin/apt", "autoremove", "-y"],
           environment: {"DEBIAN_FRONTEND": "noninteractive"},
         ));
         commandQueue.add(LinuxCommand(
           userId: 0,
-          command: "/usr/bin/apt clean -y",
+          argv: ["/usr/bin/apt", "clean", "-y"],
           environment: {"DEBIAN_FRONTEND": "noninteractive"},
         ));
       }
@@ -2478,52 +2801,45 @@ class Linux {
           .contains(SOFTWARE_MANAGERS.ZYPPER)) {
         commandQueue.add(LinuxCommand(
           userId: 0,
-          command: "/usr/bin/zypper clean -a",
+          argv: ["/usr/bin/zypper", "clean", "-a"],
         ));
       }
       if (currentenvironment.installedSoftwareManagers
           .contains(SOFTWARE_MANAGERS.DNF)) {
         commandQueue.add(LinuxCommand(
           userId: 0,
-          command: "/usr/bin/dnf clean all",
+          argv: ["/usr/bin/dnf", "clean", "all"],
         ));
       }
       if (currentenvironment.installedSoftwareManagers
           .contains(SOFTWARE_MANAGERS.PACMAN)) {
         commandQueue.add(LinuxCommand(
           userId: 0,
-          command: "/usr/bin/pacman -Sc --noconfirm",
+          argv: ["/usr/bin/pacman", "-Sc", "--noconfirm"],
         ));
       }
       if (currentenvironment.installedSoftwareManagers
           .contains(SOFTWARE_MANAGERS.FLATPAK)) {
         commandQueue.add(LinuxCommand(
           userId: 0,
-          command: "/usr/bin/flatpak uninstall --unused -y",
+          argv: ["/usr/bin/flatpak", "uninstall", "--unused", "-y"],
         ));
       }
       if (currentenvironment.installedSoftwareManagers
           .contains(SOFTWARE_MANAGERS.SNAP)) {
-        commandQueue.add(LinuxCommand(
-          userId: 0,
-          command: "/usr/bin/rm -rf /var/lib/snapd/cache/",
-        ));
+        commandQueue.add(emptyDirectoryCommand("/var/lib/snapd/cache"));
       }
       if (currentenvironment.distribution != DISTROS.FEDORA) {
-        commandQueue.add(LinuxCommand(
-          userId: 0,
-          command: "/usr/bin/rm -rf /var/tmp/",
-        ));
+        // Empties /var/tmp, does not remove it. `rm -rf /var/tmp/` took the
+        // directory with it, along with its 1777 mode and sticky bit, and
+        // anything that expected it to exist found a missing path or, worse,
+        // a fresh 755 root-owned one recreated by the next writer.
+        commandQueue.add(emptyDirectoryCommand("/var/tmp"));
       }
-      commandQueue.add(LinuxCommand(
-        userId: 0,
-        command: "/usr/bin/rm -rf ${getHomeDirectory()}/.local/share/Trash/",
-      ));
+      commandQueue.add(
+          emptyDirectoryCommand("${getHomeDirectory()}.local/share/Trash"));
     }
-    commandQueue.add(LinuxCommand(
-      userId: 0,
-      command: "/usr/bin/rm -rf $path/.Trash-1000",
-    ));
+    commandQueue.add(emptyDirectoryCommand("$path/.Trash-1000"));
     Navigator.of(context).push(MaterialPageRoute(
       builder: (context) => RunCommandQueue(
           title: AppLocalizations.of(context)!.cleanDiskspace,
@@ -2540,27 +2856,27 @@ class Linux {
         await installApplications(["firewalld"]);
         commandQueue.add(LinuxCommand(
           userId: 0,
-          command: "/usr/bin/systemctl enable firewalld --now",
+          argv: ["/usr/bin/systemctl", "enable", "firewalld", "--now"],
         ));
-        Navigator.of(context).push(MaterialPageRoute(
+        unawaited(Navigator.of(context).push(MaterialPageRoute(
             builder: (context) => RunCommandQueue(
                   title: AppLocalizations.of(context)!.cleanDiskspace,
                   route: route,
-                )));
+                ))));
         break;
       default:
         await installApplications(["gufw"]);
         commandQueue.add(LinuxCommand(
           userId: 0,
-          command: "/usr/sbin/ufw enable",
+          argv: ["/usr/sbin/ufw", "enable"],
           environment: {"PATH": getPATH()},
         ));
     }
-    Navigator.of(context).push(MaterialPageRoute(
+    unawaited(Navigator.of(context).push(MaterialPageRoute(
         builder: (context) => RunCommandQueue(
               title: AppLocalizations.of(context)!.settingUpFirewall,
               route: route,
-            )));
+            ))));
   }
 
   static String getPATH() {
@@ -2577,12 +2893,12 @@ class Linux {
         .contains(SOFTWARE_MANAGERS.APT)) {
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command: "/usr/bin/dpkg --configure -a",
+        argv: ["/usr/bin/dpkg", "--configure", "-a"],
         environment: {"DEBIAN_FRONTEND": "noninteractive", "PATH": getPATH()},
       ));
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command: "/usr/bin/apt install -f -y",
+        argv: ["/usr/bin/apt", "install", "-f", "-y"],
         environment: {"DEBIAN_FRONTEND": "noninteractive"},
       ));
     }
@@ -2590,22 +2906,32 @@ class Linux {
         .contains(SOFTWARE_MANAGERS.ZYPPER)) {
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command: "/usr/bin/zypper --non-interactive --gpg-auto-import-keys ref",
+        argv: [
+          "/usr/bin/zypper",
+          "--non-interactive",
+          "--gpg-auto-import-keys",
+          "ref"
+        ],
       ));
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command: "/usr/bin/zypper --non-interactive --gpg-auto-import-keys up",
+        argv: [
+          "/usr/bin/zypper",
+          "--non-interactive",
+          "--gpg-auto-import-keys",
+          "up"
+        ],
       ));
     }
     if (currentenvironment.installedSoftwareManagers
         .contains(SOFTWARE_MANAGERS.DNF)) {
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command: "/usr/bin/dnf check",
+        argv: ["/usr/bin/dnf", "check"],
       ));
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command: "/usr/bin/dnf install -y",
+        argv: ["/usr/bin/dnf", "install", "-y"],
       ));
     }
 
@@ -2637,41 +2963,47 @@ class Linux {
     String tempFile = "$cacheDir/temp_command.sh";
     File(tempFile).writeAsStringSync(command);
 
-    print("Opening command in terminal: $command");
+    logInfo("Opening command in terminal: $command");
+
+    // Ordered by desktop preference, with xterm as the last resort. The
+    // previous version dispatched on the desktop alone and only reached the
+    // xterm fallback through a `default:` clause that the exhaustive DESKTOPS
+    // enum made unreachable — so a KDE box without konsole simply did nothing.
+    final List<List<String>> candidates = [];
     switch (currentenvironment.desktop) {
       case DESKTOPS.KDE:
-        runCommandWithCustomArguments("konsole", ["-e" "bash", "-c", command]);
+        candidates.add(["konsole", "-e", "bash", "-c", command]);
         break;
       case DESKTOPS.GNOME:
       case DESKTOPS.CINNAMON:
-        if (File("/usr/bin/kgx").existsSync()) {
-          runCommandWithCustomArguments("kgx", ["-e", "bash", "-c", command]);
-        } else if (File("/usr/bin/gnome-terminal").existsSync()) {
-          runCommandWithCustomArguments(
-              "gnome-terminal", ["--", "bash", "-c", command]);
-        }
+        candidates.add(["kgx", "-e", "bash", "-c", command]);
+        candidates.add(["gnome-terminal", "--", "bash", "-c", command]);
         break;
       case DESKTOPS.XFCE:
-        runCommandWithCustomArguments(
-            "xfce4-terminal", ["-e", "bash $cacheDir/temp_command.sh"]);
+        candidates.add(["xfce4-terminal", "-e", "bash $tempFile"]);
         break;
-      default:
-        // Xterm
-        if (File("/usr/bin/xterm").existsSync()) {
-          runCommandWithCustomArguments("xterm", ["-e", "bash", "-c", command]);
-        }
     }
+    candidates.add(["xterm", "-e", "bash", "-c", command]);
+
+    for (final List<String> candidate in candidates) {
+      final String executable = candidate.first;
+      if (File("/usr/bin/$executable").existsSync()) {
+        runCommandWithCustomArguments(executable, candidate.sublist(1));
+        return;
+      }
+    }
+    logError("No known terminal emulator found to run: $command");
   }
 
   static void setupSnapAndSnapStore(context) {
     if (currentenvironment.distribution == DISTROS.LINUX_MINT) {
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command: "rm /etc/apt/preferences.d/nosnap.pref",
+        argv: ["rm", "/etc/apt/preferences.d/nosnap.pref"],
       ));
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command: "/usr/bin/apt-get update",
+        argv: ["/usr/bin/apt-get", "update"],
       ));
     }
 
@@ -2679,7 +3011,7 @@ class Linux {
         .contains(SOFTWARE_MANAGERS.APT)) {
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command: "/usr/bin/apt-get install -y snapd",
+        argv: ["/usr/bin/apt-get", "install", "-y", "snapd"],
         environment: {"DEBIAN_FRONTEND": "noninteractive"},
       ));
     }
@@ -2687,15 +3019,15 @@ class Linux {
         .contains(SOFTWARE_MANAGERS.DNF)) {
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command: "/usr/bin/dnf install -y snapd",
+        argv: ["/usr/bin/dnf", "install", "-y", "snapd"],
       ));
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command: "ln -s /var/lib/snapd/snap /snap",
+        argv: ["ln", "-s", "/var/lib/snapd/snap", "/snap"],
       ));
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command: "/usr/bin/snap install snapd",
+        argv: ["/usr/bin/snap", "install", "snapd"],
       ));
     }
     // Arch: https://snapcraft.io/install/snapd/arch
@@ -2711,28 +3043,35 @@ class Linux {
         .contains(SOFTWARE_MANAGERS.PACMAN)) {
       installApplications(["git"],
           preferredSoftwareManager: SOFTWARE_MANAGERS.PACMAN);
-      String bashCode =
-          "git clone https://aur.archlinux.org/snapd.git /tmp/snapd; cd /tmp/snapd; makepkg -si --noconfirm;";
+      // One of the few commands that really needs a shell: it changes
+      // directory between two steps. The script is a constant — nothing is
+      // interpolated into it.
       commandQueue.add(LinuxCommand(
         userId: currentenvironment.currentUserId,
-        command: bashCode,
+        useShell: true,
+        argv: const [
+          "set -e; "
+              "git clone https://aur.archlinux.org/snapd.git /tmp/snapd; "
+              "cd /tmp/snapd; "
+              "makepkg -si --noconfirm",
+        ],
         environment: {"PATH": getPATH(), "HOME": getHomeDirectory()},
       ));
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command: "/usr/bin/systemctl enable --now snapd.socket",
+        argv: ["/usr/bin/systemctl", "enable", "--now", "snapd.socket"],
       ));
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command: "ln -s /var/lib/snapd/snap /snap",
+        argv: ["ln", "-s", "/var/lib/snapd/snap", "/snap"],
       ));
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command: "/usr/bin/snap install snapd",
+        argv: ["/usr/bin/snap", "install", "snapd"],
       ));
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command: "/usr/bin/rm -rf /tmp/snapd",
+        argv: ["/usr/bin/rm", "-rf", "/tmp/snapd"],
       ));
     }
     // openSUSE is a bit more complicated: https://snapcraft.io/install/snapd/opensuse
@@ -2740,13 +3079,13 @@ class Linux {
     //     .contains(SOFTWARE_MANAGERS.ZYPPER)) {
     //   commandQueue.add(LinuxCommand(
     //     userId: 0,
-    //     command: "/usr/bin/zypper install -y snapd",
+    //     argv: ["/usr/bin/zypper", "install", "-y", "snapd"],
     //   ));
     // }
 
     commandQueue.add(LinuxCommand(
       userId: 0,
-      command: "/usr/bin/snap install snap-store",
+      argv: ["/usr/bin/snap", "install", "snap-store"],
     ));
 
     Navigator.of(context).push(MaterialPageRoute(
@@ -2766,7 +3105,7 @@ class Linux {
   static void makeCurrentUserToAdministrator(context) {
     commandQueue.add(LinuxCommand(
       userId: 0,
-      command: "/usr/sbin/usermod -aG sudo ${currentenvironment.username}",
+      argv: ["/usr/sbin/usermod", "-aG", "sudo", (currentenvironment.username)],
     ));
 
     Navigator.of(context).push(MaterialPageRoute(
@@ -2781,34 +3120,34 @@ class Linux {
     switch (currentenvironment.distribution) {
       case DISTROS.LINUX_MINT:
       case DISTROS.LMDE:
-        runCommand("/usr/bin/mintinstall");
+        unawaited(runCommand("/usr/bin/mintinstall"));
         break;
       case DISTROS.UBUNTU:
       case DISTROS.ZORINOS:
       case DISTROS.POPOS:
-        runCommand("/usr/bin/gnome-software");
+        unawaited(runCommand("/usr/bin/gnome-software"));
         break;
       case DISTROS.FEDORA:
-        runCommand("/usr/bin/gnome-software");
+        unawaited(runCommand("/usr/bin/gnome-software"));
         break;
       case DISTROS.OPENSUSE:
         if (currentenvironment.desktop == DESKTOPS.KDE) {
-          runCommand("/usr/bin/plasma-discover");
+          unawaited(runCommand("/usr/bin/plasma-discover"));
         } else {
-          runCommand("/usr/bin/gnome-software");
+          unawaited(runCommand("/usr/bin/gnome-software"));
         }
         break;
       case DISTROS.MXLINUX:
-        runCommand("/usr/bin/mx-packageinstaller");
+        unawaited(runCommand("/usr/bin/mx-packageinstaller"));
         break;
       case DISTROS.KDENEON:
-        runCommand("/usr/bin/plasma-discover");
+        unawaited(runCommand("/usr/bin/plasma-discover"));
         break;
       case DISTROS.DEBIAN:
-        runCommand("/usr/bin/synaptic");
+        unawaited(runCommand("/usr/bin/synaptic"));
         break;
       default:
-        runCommand("/usr/bin/gnome-software");
+        unawaited(runCommand("/usr/bin/gnome-software"));
     }
   }
 
@@ -2833,7 +3172,7 @@ class Linux {
         .contains(currentenvironment.distribution)) {
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command: "/usr/bin/sed -i '/cdrom/d' /etc/apt/sources.list",
+        argv: ["/usr/bin/sed", "-i", "/cdrom/d", "/etc/apt/sources.list"],
       ));
       Navigator.of(context).push(MaterialPageRoute(
         builder: (context) => RunCommandQueue(
@@ -2874,37 +3213,37 @@ class Linux {
 
   static void ensureGrubSettings(context, bool grubVisible, bool enableBigFont,
       int timeout, bool startLastBootedOne) {
-    String grub_timeout_style = grubVisible ? "menu" : "hidden";
-    String grub_timeout = timeout.toString();
-    String grub_default = startLastBootedOne ? "saved" : "0";
-    String grub_save_default = startLastBootedOne ? "true" : "false";
-    String grub_gfxmode = enableBigFont ? "640x480" : "";
+    String grubTimeoutStyle = grubVisible ? "menu" : "hidden";
+    String grubTimeout = timeout.toString();
+    String grubDefault = startLastBootedOne ? "saved" : "0";
+    String grubSaveDefault = startLastBootedOne ? "true" : "false";
+    String grubGfxmode = enableBigFont ? "640x480" : "";
 
-    if (grub_timeout_style == "menu" && timeout < 1) {
-      grub_timeout = "1";
+    if (grubTimeoutStyle == "menu" && timeout < 1) {
+      grubTimeout = "1";
     }
 
-    if (grub_timeout_style == "hidden" && timeout < 0) {
-      grub_timeout = "0";
+    if (grubTimeoutStyle == "hidden" && timeout < 0) {
+      grubTimeout = "0";
     }
 
     ensureOptionInConfigFile(
-        "GRUB_TIMEOUT_STYLE", grub_timeout_style, "/etc/default/grub");
-    ensureOptionInConfigFile("GRUB_TIMEOUT", grub_timeout, "/etc/default/grub");
-    ensureOptionInConfigFile("GRUB_DEFAULT", grub_default, "/etc/default/grub");
+        "GRUB_TIMEOUT_STYLE", grubTimeoutStyle, "/etc/default/grub");
+    ensureOptionInConfigFile("GRUB_TIMEOUT", grubTimeout, "/etc/default/grub");
+    ensureOptionInConfigFile("GRUB_DEFAULT", grubDefault, "/etc/default/grub");
     ensureOptionInConfigFile(
-        "GRUB_SAVEDEFAULT", grub_save_default, "/etc/default/grub");
-    ensureOptionInConfigFile("GRUB_GFXMODE", grub_gfxmode, "/etc/default/grub");
+        "GRUB_SAVEDEFAULT", grubSaveDefault, "/etc/default/grub");
+    ensureOptionInConfigFile("GRUB_GFXMODE", grubGfxmode, "/etc/default/grub");
 
     if (currentenvironment.distribution != DISTROS.FEDORA) {
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command: "/usr/sbin/grub-mkconfig -o /boot/grub/grub.cfg",
+        argv: ["/usr/sbin/grub-mkconfig", "-o", "/boot/grub/grub.cfg"],
       ));
     } else {
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command: "/usr/sbin/grub2-mkconfig -o /boot/grub2/grub.cfg",
+        argv: ["/usr/sbin/grub2-mkconfig", "-o", "/boot/grub2/grub.cfg"],
       ));
     }
 
@@ -2919,12 +3258,30 @@ class Linux {
   ///
   /// Only adds the commands to the command queue to ensure that the key is set to the value.
   /// If the value is empty, the key will be removed from the file.
+  /// Escapes a value for the right-hand side of a `sed` s/// expression.
+  ///
+  /// argv keeps a value out of the *shell*, but a sed script is a second
+  /// parser: an unescaped `/` ends the expression and an unescaped `&` means
+  /// "the whole match". Every value that reaches this function today is a
+  /// constant, which is exactly the kind of assumption that stops holding.
+  static String sedEscapeReplacement(String value) => value
+      .replaceAll(r"\", r"\\")
+      .replaceAll("&", r"\&")
+      .replaceAll("/", r"\/")
+      .replaceAll("\n", r"\n");
+
+  /// Escapes a value used as a sed address or pattern.
+  static String sedEscapePattern(String value) => value.replaceAllMapped(
+      RegExp(r"[\\^$.*/\[\]]"), (match) => "\\${match[0]}");
+
   static void ensureOptionInConfigFile(String key, String value, String path) {
+    final String keyPattern = sedEscapePattern(key);
+
     /// Remove the key from the file if the value is empty
     if (value.isEmpty) {
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command: "sed -i '/$key/d' $path",
+        argv: ["sed", "-i", "/$keyPattern/d", path],
       ));
       return;
     }
@@ -2941,18 +3298,51 @@ class Linux {
     }
 
     if (!settingFound) {
-      // Add the key to the file
+      // Add the key to the file. The redirection needs a shell; the values do
+      // not go into the script text but into $1 and $2, so a value containing
+      // a quote or a semicolon stays data.
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command: "echo '$key=$value' >> $path",
+        useShell: true,
+        argv: ["printf '%s\\n' \"\$1\" >> \"\$2\"", "$key=$value", path],
       ));
     } else {
       // Replace the key in the file
       commandQueue.add(LinuxCommand(
         userId: 0,
-        command: "sed -i 's/$key=.*/$key=$value/' $path",
+        argv: [
+          "sed",
+          "-i",
+          "s/$keyPattern=.*/$keyPattern=${sedEscapeReplacement(value)}/",
+          path
+        ],
       ));
     }
+  }
+
+  /// Deletes everything inside [directory] but keeps the directory itself.
+  ///
+  /// `find … -delete` rather than a `rm -rf` of the directory: several of the
+  /// paths cleaned here are system directories whose existence, ownership and
+  /// mode other software depends on.
+  static LinuxCommand emptyDirectoryCommand(String directory) {
+    return LinuxCommand(
+      userId: 0,
+      argv: [
+        "/usr/bin/find",
+        directory,
+        "-mindepth",
+        "1",
+        "-maxdepth",
+        "1",
+        "-exec",
+        "/usr/bin/rm",
+        "-rf",
+        "--",
+        "{}",
+        "+",
+      ],
+    );
   }
 
   static void copyToClipboard(String text) {

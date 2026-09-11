@@ -2,17 +2,17 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 class SingleBarChart extends StatelessWidget {
-  late double size;
-  late double value;
-  late Color backgroundColor;
-  late Color fillColor;
-  late String text;
-  late String tooltip;
-  late TextStyle textStyle;
-  late Widget? customWidgetRightOfBar;
+  final double size;
+  final double value;
+  final Color backgroundColor;
+  final Color fillColor;
+  final String text;
+  final String tooltip;
+  final TextStyle textStyle;
+  final Widget? customWidgetRightOfBar;
 
-  SingleBarChart({
-    Key? key,
+  const SingleBarChart({
+    super.key,
     this.value = 0.5,
     this.size = 100,
     this.backgroundColor = const Color.fromARGB(255, 211, 211, 211),
@@ -21,14 +21,17 @@ class SingleBarChart extends StatelessWidget {
     this.textStyle = const TextStyle(),
     this.tooltip = "",
     this.customWidgetRightOfBar,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
-    if (Theme.of(context).brightness == Brightness.dark) {
-      if (backgroundColor == const Color.fromARGB(255, 211, 211, 211)) {
-        backgroundColor = const Color.fromARGB(255, 87, 87, 87);
-      }
+    // Resolved per build rather than written back into the widget: the same
+    // instance can be rebuilt under a different theme, and a widget that
+    // mutates itself keeps the first theme it ever saw.
+    Color barBackgroundColor = backgroundColor;
+    if (Theme.of(context).brightness == Brightness.dark &&
+        backgroundColor == const Color.fromARGB(255, 211, 211, 211)) {
+      barBackgroundColor = const Color.fromARGB(255, 87, 87, 87);
     }
     return Column(
       children: [
@@ -44,8 +47,9 @@ class SingleBarChart extends StatelessWidget {
                   maxY: size,
                   minY: 0,
                   alignment: BarChartAlignment.spaceEvenly,
-                  barTouchData: BarTouchData(touchTooltipData: BarTouchTooltipData(
-                      getTooltipItem: ((group, groupIndex, rod, rodIndex) {
+                  barTouchData: BarTouchData(touchTooltipData:
+                      BarTouchTooltipData(
+                          getTooltipItem: ((group, groupIndex, rod, rodIndex) {
                     if (tooltip == "") {
                       return null;
                     }
@@ -62,7 +66,7 @@ class SingleBarChart extends StatelessWidget {
                   }))),
                   borderData: FlBorderData(show: false),
                   gridData: FlGridData(show: false),
-                  barGroups: [generateGroupData()],
+                  barGroups: [generateGroupData(barBackgroundColor)],
                   titlesData: FlTitlesData(show: false),
                 ),
               ),
@@ -84,7 +88,7 @@ class SingleBarChart extends StatelessWidget {
     );
   }
 
-  BarChartGroupData generateGroupData() {
+  BarChartGroupData generateGroupData(Color barBackgroundColor) {
     return BarChartGroupData(
       x: 0,
       groupVertically: true,
@@ -92,7 +96,7 @@ class SingleBarChart extends StatelessWidget {
         BarChartRodData(
           fromY: 0,
           toY: size,
-          color: backgroundColor,
+          color: barBackgroundColor,
           width: 20,
         ),
         BarChartRodData(

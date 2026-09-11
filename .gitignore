@@ -55,3 +55,6 @@ linux-assistant_*.deb
 
 linux-assistant-bundle.zip
 linux-assistant-bundle/
+
+# superpowers SDD scratch (progress ledger)
+.superpowers/

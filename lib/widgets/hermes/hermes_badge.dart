@@ -80,8 +80,8 @@ class HermesBadge extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: colors.bg,
-        border: Border.all(
-            color: colors.border, width: HermesTokens.borderWidth),
+        border:
+            Border.all(color: colors.border, width: HermesTokens.borderWidth),
         borderRadius: BorderRadius.circular(HermesTokens.radiusPill),
       ),
       child: Row(

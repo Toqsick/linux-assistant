@@ -7,12 +7,12 @@ typedef StringParseFunction = String Function(String);
 
 class SettingWidgetOnOff extends StatefulWidget {
   /// Settings-Key
-  late String settingKey;
+  final String settingKey;
 
-  late String text;
-  late bool defaultValue;
-  late VoidCallback? onPressed;
-  SettingWidgetOnOff(
+  final String text;
+  final bool defaultValue;
+  final VoidCallback? onPressed;
+  const SettingWidgetOnOff(
       {super.key,
       required this.settingKey,
       required this.text,
@@ -82,14 +82,14 @@ class SettingWidgetOnOffState extends State<SettingWidgetOnOff> {
 
 class SettingWidgetText extends StatefulWidget {
   /// Settings-Key
-  late String settingKey;
+  final String settingKey;
 
-  late String text;
-  late String defaultValue;
-  late StringParseFunction? parseFunction;
-  late final String hintText;
-  late double textFieldWidth;
-  SettingWidgetText(
+  final String text;
+  final String defaultValue;
+  final StringParseFunction? parseFunction;
+  final String hintText;
+  final double textFieldWidth;
+  const SettingWidgetText(
       {super.key,
       required this.settingKey,
       required this.text,

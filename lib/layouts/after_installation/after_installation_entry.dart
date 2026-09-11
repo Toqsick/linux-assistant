@@ -4,7 +4,7 @@ import 'package:linux_assistant/layouts/mint_y.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
 
 class AfterInstallationEntry extends StatelessWidget {
-  const AfterInstallationEntry({Key? key}) : super(key: key);
+  const AfterInstallationEntry({super.key});
 
   @override
   Widget build(BuildContext context) {

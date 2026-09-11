@@ -3,9 +3,9 @@ import 'package:linux_assistant/layouts/mint_y.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
 
 class WarningMessage extends StatelessWidget {
-  late String text;
-  late VoidCallback? fixAction;
-  WarningMessage({Key? key, this.text = "", this.fixAction}) : super(key: key);
+  final String text;
+  final VoidCallback? fixAction;
+  const WarningMessage({super.key, this.text = "", this.fixAction});
 
   @override
   Widget build(BuildContext context) {

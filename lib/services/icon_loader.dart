@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg_provider/flutter_svg_provider.dart';
 import 'package:linux_assistant/layouts/mint_y.dart';
 import 'package:linux_assistant/services/linux.dart';
+import 'package:linux_assistant/services/logger.dart';
 
 class IconLoader {
   // handle IconLoader as a singleton
@@ -92,7 +93,7 @@ class IconLoader {
           height: iconSize,
           image: Svg(iconPath),
           errorBuilder: (context, error, stackTrace) {
-            print("Failed to load $iconPath: ${error.toString()}");
+            logError("Failed to load $iconPath", error);
             return Icon(
               Icons.settings,
               size: iconSize,

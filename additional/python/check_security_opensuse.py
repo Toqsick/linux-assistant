@@ -29,37 +29,33 @@ def get_additional_sources():
             print(f"additionalsource: {name}")
 
 def get_available_updates():
-    jessentials.run_command("zypper --non-interactive refresh", False, True, {'LC_ALL': 'C'})
-    lines = jessentials.run_command("zypper --non-interactive list-updates", False, True, {'LC_ALL': 'C'})
-    if len(lines) > 4:
-        for i in range(len(lines)-4):
-            print(f"upgradeablepackage: (to be implemented)")
+    # Read-only: --no-refresh reads the cached metadata. A refresh here would
+    # hit the network and write to zypp's caches on a page whose polkit action
+    # promises "Nothing is changed". Only table data rows count, not headers
+    # and separators.
+    lines = jessentials.run_command(
+        "/usr/bin/zypper --non-interactive --no-refresh list-updates",
+        False, True, {'LC_ALL': 'C'})
+    update_rows = [line for line in lines
+                   if line.startswith("|") and not line.startswith("| Repository")]
+    for _ in update_rows:
+        print("upgradeablepackage: (to be implemented)")
 
 def check_server_access():
     # Check for firewall
     if (jfiles.does_file_exist("/usr/bin/firewall-cmd")):
-        lines = jessentials.run_command("/usr/bin/systemctl status firewalld", False, True)
-        firewalldActive = False
-        firewall_running = False
-        for line in lines:
-            if "active (running)" in line:
-                firewall_running = True
-                break
-        if not firewall_running:
+        if not jessentials.systemd_unit_is_active("firewalld"):
             print("firewallinactive")
     else:
         print("nofirewall")
-    
+
     # Check for Xrdp
-    lines = jessentials.run_command("/usr/bin/systemctl status xrdp", False, True)
-    if (len(lines) > 1):
+    if jessentials.systemd_unit_is_active("xrdp"):
         print("xrdprunning")
-    # Check for ssh:
-    lines = jessentials.run_command("/usr/bin/systemctl status ssh", False, True)
-    if (len(lines) > 1):
+    # Check for ssh: openSUSE names the unit sshd.
+    if jessentials.systemd_unit_is_active("sshd"):
         print("sshrunning")
-        lines = jessentials.run_command("/usr/bin/systemctl status fail2ban", False, True)
-        if (len(lines) == 0):
+        if not jessentials.systemd_unit_is_active("fail2ban"):
             print("fail2bannotrunning")
 
 if __name__ == "__main__":

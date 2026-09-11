@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:linux_assistant/enums/softwareManagers.dart';
 import 'package:linux_assistant/layouts/mint_y.dart';
@@ -7,8 +8,8 @@ import 'package:linux_assistant/widgets/system_icon.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
 
 class RemoveSoftwareWidget extends StatelessWidget {
-  late Widget routeAfterRemoval;
-  RemoveSoftwareWidget({super.key, required this.routeAfterRemoval});
+  final Widget routeAfterRemoval;
+  const RemoveSoftwareWidget({super.key, required this.routeAfterRemoval});
 
   @override
   Widget build(BuildContext context) {
@@ -17,8 +18,7 @@ class RemoveSoftwareWidget extends StatelessWidget {
         future: installedSoftware,
         builder: (context, snapshot) {
           if (snapshot.hasData) {
-            List<dynamic> installedSoftwareList =
-                snapshot.data! as List<dynamic>;
+            List<dynamic> installedSoftwareList = snapshot.data!;
             return Column(
               // padding: 10,
               // ratio: 2,
@@ -34,12 +34,13 @@ class RemoveSoftwareWidget extends StatelessWidget {
                     onPressed: () async {
                       await Linux.removeApplications([flatpak[0]],
                           softwareManager: SOFTWARE_MANAGERS.FLATPAK);
-                      Navigator.of(context).push(MaterialPageRoute(
+                      if (!context.mounted) return;
+                      unawaited(Navigator.of(context).push(MaterialPageRoute(
                           builder: (context) => RunCommandQueue(
                                 title: AppLocalizations.of(context)!
                                     .uninstallApp(flatpak[1]),
                                 route: routeAfterRemoval,
-                              )));
+                              ))));
                     },
                   ),
                 for (var snap in installedSoftwareList[1] as List<String>)
@@ -51,12 +52,13 @@ class RemoveSoftwareWidget extends StatelessWidget {
                     onPressed: () async {
                       await Linux.removeApplications([snap],
                           softwareManager: SOFTWARE_MANAGERS.SNAP);
-                      Navigator.of(context).push(MaterialPageRoute(
+                      if (!context.mounted) return;
+                      unawaited(Navigator.of(context).push(MaterialPageRoute(
                           builder: (context) => RunCommandQueue(
                                 title: AppLocalizations.of(context)!
                                     .uninstallApp(snap),
                                 route: routeAfterRemoval,
-                              )));
+                              ))));
                     },
                   ),
               ],

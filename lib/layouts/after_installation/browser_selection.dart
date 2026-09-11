@@ -158,7 +158,8 @@ class AfterInstallationBrowserSelection extends StatelessWidget {
                   AfterInstallationService.librewolf[1] =
                       snapshot.data.toString() == 'true';
                   return MintYSelectableEntryWithIconHorizontal(
-                    icon: const SystemIcon(iconString: "librewolf", iconSize: 64),
+                    icon:
+                        const SystemIcon(iconString: "librewolf", iconSize: 64),
                     title: "LibreWolf",
                     text: AppLocalizations.of(context)!.librewolfDescription,
                     selected: snapshot.data.toString() == 'true',
@@ -196,7 +197,8 @@ class AfterInstallationBrowserSelection extends StatelessWidget {
                   AfterInstallationService.waterfox[1] =
                       snapshot.data.toString() == 'true';
                   return MintYSelectableEntryWithIconHorizontal(
-                    icon: const SystemIcon(iconString: "waterfox", iconSize: 64),
+                    icon:
+                        const SystemIcon(iconString: "waterfox", iconSize: 64),
                     title: "Waterfox",
                     text: AppLocalizations.of(context)!.waterfoxDescription,
                     selected: snapshot.data.toString() == 'true',
@@ -234,7 +236,8 @@ class AfterInstallationBrowserSelection extends StatelessWidget {
                   AfterInstallationService.torBrowser[1] =
                       snapshot.data.toString() == 'true';
                   return MintYSelectableEntryWithIconHorizontal(
-                    icon: const SystemIcon(iconString: "tor-browser", iconSize: 64),
+                    icon: const SystemIcon(
+                        iconString: "tor-browser", iconSize: 64),
                     title: "Tor Browser",
                     text: AppLocalizations.of(context)!.torbrowserDescription,
                     selected: snapshot.data.toString() == 'true',

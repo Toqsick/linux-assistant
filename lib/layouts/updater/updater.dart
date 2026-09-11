@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:linux_assistant/layouts/mint_y.dart';
 import 'package:linux_assistant/layouts/run_command_queue.dart';
@@ -19,6 +21,39 @@ class _LinuxAssistantUpdatePageState extends State<LinuxAssistantUpdatePage> {
   /// includes a network request to api.github.com with a five second timeout —
   /// on every rebuild of the startup screen.
   late final Future<void> weeklyTasks = WeeklyTasks.doWeekleyTasks();
+
+  /// Downloads and verifies the package before anything is queued.
+  ///
+  /// The button used to queue a `wget` and an `apt install` and navigate away
+  /// immediately, so a download that failed or was tampered with was followed
+  /// by an install attempt regardless.
+  Future<void> _startUpdate(BuildContext context) async {
+    final String updating =
+        AppLocalizations.of(context)!.linuxAssistantIsUpdating;
+    final String title = AppLocalizations.of(context)!.update;
+    final NavigatorState navigator = Navigator.of(context);
+    final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+
+    unawaited(navigator.push(MaterialPageRoute(
+      builder: (context) => const MintYLoadingPage(),
+    )));
+
+    final String? error = await LinuxAssistantUpdater.prepareUpdate();
+
+    if (error != null) {
+      navigator.pop();
+      messenger.showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
+
+    unawaited(navigator.pushReplacement(MaterialPageRoute(
+      builder: (context) => RunCommandQueue(
+        message: updating,
+        title: title,
+        route: const MainSearchLoader(destination: LoaderDestination.hub),
+      ),
+    )));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,16 +97,8 @@ class _LinuxAssistantUpdatePageState extends State<LinuxAssistantUpdatePage> {
                 const SizedBox(
                   width: 10,
                 ),
-                MintYButtonNavigate(
-                  onPressed: () {
-                    LinuxAssistantUpdater.updateLinuxAssistantToNewestVersion();
-                  },
-                  route: RunCommandQueue(
-                      message: AppLocalizations.of(context)!
-                          .linuxAssistantIsUpdating,
-                      title: AppLocalizations.of(context)!.update,
-                      route: const MainSearchLoader(
-                          destination: LoaderDestination.hub)),
+                MintYButton(
+                  onPressed: () => _startUpdate(context),
                   text: Text(
                     AppLocalizations.of(context)!.updateNow,
                     style: MintY.heading4White,

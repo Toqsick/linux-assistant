@@ -3,7 +3,7 @@ import 'package:linux_assistant/layouts/mint_y.dart';
 import 'package:linux_assistant/services/linux.dart';
 
 class HardwareInfo extends StatefulWidget {
-  const HardwareInfo({Key? key}) : super(key: key);
+  const HardwareInfo({super.key});
 
   @override
   State<StatefulWidget> createState() => _HardwareInfoState();

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -32,16 +33,17 @@ class ActionHandler {
       return;
     }
 
-    print(actionEntry.action);
-
     // Save opened for intelligent search
     ConfigHandler configHandler = ConfigHandler();
     if (configHandler.getValueUnsafe("self_learning_search", true)) {
       String newDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
       String oldList =
           configHandler.getValueUnsafe("opened.${actionEntry.action}", "");
-      configHandler.setValue(
+      await configHandler.setValue(
           "opened.${actionEntry.action}", "$oldList$newDate;");
+      // The config write is the first async gap in this method; everything
+      // below navigates with the caller's context.
+      if (!context.mounted) return;
     }
 
     switch (actionEntry.action) {
@@ -58,20 +60,20 @@ class ActionHandler {
         callback();
         break;
       case "open_introduction":
-        Navigator.push(
+        unawaited(Navigator.push(
           context,
           MaterialPageRoute(
               builder: (context) => const GreeterIntroduction(forceOpen: true)),
-        );
+        ));
         break;
       case "setup_linux_assistant_shortcut":
-        Navigator.push(
+        unawaited(Navigator.push(
           context,
           MaterialPageRoute(
               builder: (context) => ActivateHotkeyQuestion(
                     route: const MainSearchLoader(),
                   )),
-        );
+        ));
         break;
       case "send_files_via_warpinator":
         Linux.openOrInstallWarpinator(context, callback);
@@ -83,42 +85,43 @@ class ActionHandler {
         Linux.openOrInstallRedshift(context, callback);
         break;
       case "shutdown":
-        showDialog(context: context, builder: (context) => ShutdownDialog());
+        unawaited(showDialog(
+            context: context, builder: (context) => ShutdownDialog()));
         break;
       case "exit":
         exit(0);
       case "power_mode":
-        Navigator.push(
+        unawaited(Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const PowerMode()),
-        );
+        ));
         break;
       case "security_check":
-        Navigator.push(
+        unawaited(Navigator.push(
           context,
           MaterialPageRoute(
               builder: (context) => const SecurityCheckOverview()),
-        );
+        ));
         break;
       case "linux_health":
-        Navigator.push(
+        unawaited(Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const LinuxHealthOverview()),
-        );
+        ));
         break;
       case "disk_cleaner":
-        Navigator.push(
+        unawaited(Navigator.push(
           context,
           MaterialPageRoute(
               builder: (context) => const CleanerSelectDiskPage()),
-        );
+        ));
         break;
       case "after_installation":
-        Navigator.push(
+        unawaited(Navigator.push(
           context,
           MaterialPageRoute(
               builder: (context) => const AfterInstallationEntry()),
-        );
+        ));
         break;
       default:
     }
@@ -136,8 +139,8 @@ class ActionHandler {
     }
 
     if (actionEntry.action.startsWith("openfolder:")) {
-      Linux.runCommandWithCustomArguments(
-          "xdg-open", [actionEntry.action.replaceFirst("openfolder:", "")]);
+      unawaited(Linux.runCommandWithCustomArguments(
+          "xdg-open", [actionEntry.action.replaceFirst("openfolder:", "")]));
       callback();
     }
 
@@ -152,61 +155,66 @@ class ActionHandler {
         //Linux.runCommand(file);
 
         // Run the file in a terminal (default for now).
-        Linux.runExecutableInTerminal(file);
+        unawaited(Linux.runExecutableInTerminal(file));
       } else {
-        Linux.runCommandWithCustomArguments("xdg-open", [file]);
+        unawaited(Linux.runCommandWithCustomArguments("xdg-open", [file]));
       }
 
       callback();
     }
 
     if (actionEntry.action == "update_system") {
-      Linux.updateAllPackages();
-      Navigator.of(context).push(MaterialPageRoute(
+      await Linux.updateAllPackages();
+      if (!context.mounted) return;
+      unawaited(Navigator.of(context).push(MaterialPageRoute(
           builder: (context) => RunCommandQueue(
               title: AppLocalizations.of(context)!.update,
               message: AppLocalizations.of(context)!.updateSystemDescription,
               offerShutdownAfterwards: true,
-              route: const MainSearchLoader())));
+              route: const MainSearchLoader()))));
     }
 
     if (actionEntry.action == "install_multimedia_codecs") {
-      Linux.installMultimediaCodecs();
-      Navigator.of(context).push(MaterialPageRoute(
+      await Linux.installMultimediaCodecs();
+      if (!context.mounted) return;
+      unawaited(Navigator.of(context).push(MaterialPageRoute(
           builder: (context) => RunCommandQueue(
               title: AppLocalizations.of(context)!.installMultimediaCodecs,
               message: AppLocalizations.of(context)!
                   .installMultimediaCodecsDescription,
-              route: const MainSearchLoader())));
+              route: const MainSearchLoader()))));
     }
 
     if (actionEntry.action == "enable_automatic_updates") {
       await Linux.enableAutomaticUpdates();
-      Navigator.of(context).push(MaterialPageRoute(
+      if (!context.mounted) return;
+      unawaited(Navigator.of(context).push(MaterialPageRoute(
           builder: (context) => RunCommandQueue(
               title: AppLocalizations.of(context)!
                   .automaticUpdateManagerConfiguration,
               message: AppLocalizations.of(context)!
                   .automaticUpdateManagerConfigurationDescription,
-              route: const MainSearchLoader())));
+              route: const MainSearchLoader()))));
     }
 
     if (actionEntry.action == "enable_automatic_snapshots") {
       await Linux.enableAutomaticSnapshots();
-      Navigator.of(context).push(MaterialPageRoute(
+      if (!context.mounted) return;
+      unawaited(Navigator.of(context).push(MaterialPageRoute(
           builder: (context) => RunCommandQueue(
               title: AppLocalizations.of(context)!
                   .automaticUpdateManagerConfiguration,
               message: AppLocalizations.of(context)!
                   .automaticUpdateManagerConfigurationDescription,
-              route: const MainSearchLoader())));
+              route: const MainSearchLoader()))));
     }
 
     if (actionEntry.action.startsWith("apt-install:")) {
       String pkg = actionEntry.action.replaceFirst("apt-install:", "");
       await Linux.installApplications([pkg],
           preferredSoftwareManager: SOFTWARE_MANAGERS.APT);
-      Navigator.push(
+      if (!context.mounted) return;
+      unawaited(Navigator.push(
         context,
         MaterialPageRoute(
             builder: (context) => RunCommandQueue(
@@ -214,28 +222,32 @@ class ActionHandler {
                   message: "Your package will be installed in a few moments...",
                   route: MainSearchLoader(),
                 )),
-      );
+      ));
     }
 
     if (actionEntry.action.startsWith("apt-uninstall:")) {
       String pkg = actionEntry.action.replaceFirst("apt-uninstall:", "");
       await Linux.removeApplications([pkg],
           softwareManager: SOFTWARE_MANAGERS.APT);
-      Navigator.push(
+      if (!context.mounted) return;
+      unawaited(Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) =>
                 UninstallerQuestion(action: actionEntry.action),
-          ));
+          )));
     }
 
     if (actionEntry.action.startsWith("zypper-install:")) {
       String pkg = actionEntry.action.replaceFirst("zypper-install:", "");
-      Linux.commandQueue.add(LinuxCommand(
-          userId: 0,
-          command:
-              "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER)} --non-interactive install $pkg"));
-      Navigator.push(
+      Linux.commandQueue.add(LinuxCommand(userId: 0, argv: [
+        Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.ZYPPER),
+        "--non-interactive",
+        "install",
+        pkg
+      ]));
+      if (!context.mounted) return;
+      unawaited(Navigator.push(
         context,
         MaterialPageRoute(
             builder: (context) => RunCommandQueue(
@@ -243,28 +255,32 @@ class ActionHandler {
                   message: "Your package will be installed in a few moments...",
                   route: MainSearchLoader(),
                 )),
-      );
+      ));
     }
 
     if (actionEntry.action.startsWith("zypper-uninstall:")) {
       String pkg = actionEntry.action.replaceFirst("zypper-uninstall:", "");
       await Linux.removeApplications([pkg],
           softwareManager: SOFTWARE_MANAGERS.ZYPPER);
-      Navigator.push(
+      if (!context.mounted) return;
+      unawaited(Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) =>
                 UninstallerQuestion(action: actionEntry.action),
-          ));
+          )));
     }
 
     if (actionEntry.action.startsWith("dnf-install:")) {
       String pkg = actionEntry.action.replaceFirst("dnf-install:", "");
-      Linux.commandQueue.add(LinuxCommand(
-          userId: 0,
-          command:
-              "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF)} install $pkg -y"));
-      Navigator.push(
+      Linux.commandQueue.add(LinuxCommand(userId: 0, argv: [
+        Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.DNF),
+        "install",
+        pkg,
+        "-y"
+      ]));
+      if (!context.mounted) return;
+      unawaited(Navigator.push(
         context,
         MaterialPageRoute(
             builder: (context) => RunCommandQueue(
@@ -272,28 +288,33 @@ class ActionHandler {
                   message: "Your package will be installed in a few moments...",
                   route: MainSearchLoader(),
                 )),
-      );
+      ));
     }
 
     if (actionEntry.action.startsWith("dnf-uninstall:")) {
       String pkg = actionEntry.action.replaceFirst("dnf-uninstall:", "");
       await Linux.removeApplications([pkg],
           softwareManager: SOFTWARE_MANAGERS.DNF);
-      Navigator.push(
+      if (!context.mounted) return;
+      unawaited(Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) =>
                 UninstallerQuestion(action: actionEntry.action),
-          ));
+          )));
     }
 
     if (actionEntry.action.startsWith("pacman-install:")) {
       String pkg = actionEntry.action.replaceFirst("pacman-install:", "");
-      Linux.commandQueue.add(LinuxCommand(
-          userId: 0,
-          command:
-              "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN)} -S --needed --noconfirm $pkg"));
-      Navigator.push(
+      Linux.commandQueue.add(LinuxCommand(userId: 0, argv: [
+        Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN),
+        "-S",
+        "--needed",
+        "--noconfirm",
+        pkg
+      ]));
+      if (!context.mounted) return;
+      unawaited(Navigator.push(
         context,
         MaterialPageRoute(
             builder: (context) => RunCommandQueue(
@@ -301,30 +322,37 @@ class ActionHandler {
                   message: AppLocalizations.of(context)!.packageWillBeInstalled,
                   route: const MainSearchLoader(),
                 )),
-      );
+      ));
     }
 
     if (actionEntry.action.startsWith("pacman-uninstall:")) {
       String pkg = actionEntry.action.replaceFirst("pacman-uninstall:", "");
-      Linux.commandQueue.add(LinuxCommand(
-          userId: 0,
-          command:
-              "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN)} -Rs --noconfirm $pkg"));
-      Navigator.push(
+      Linux.commandQueue.add(LinuxCommand(userId: 0, argv: [
+        Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.PACMAN),
+        "-Rs",
+        "--noconfirm",
+        pkg
+      ]));
+      if (!context.mounted) return;
+      unawaited(Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) =>
                 UninstallerQuestion(action: actionEntry.action),
-          ));
+          )));
     }
 
     if (actionEntry.action.startsWith("flatpak-install:")) {
       String pkg = actionEntry.action.replaceFirst("flatpak-install:", "");
-      Linux.commandQueue.add(LinuxCommand(
-          userId: 0,
-          command:
-              "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.FLATPAK)} install $pkg -y --noninteractive"));
-      Navigator.push(
+      Linux.commandQueue.add(LinuxCommand(userId: 0, argv: [
+        Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.FLATPAK),
+        "install",
+        pkg,
+        "-y",
+        "--noninteractive"
+      ]));
+      if (!context.mounted) return;
+      unawaited(Navigator.push(
         context,
         MaterialPageRoute(
             builder: (context) => RunCommandQueue(
@@ -332,14 +360,15 @@ class ActionHandler {
                   message: AppLocalizations.of(context)!.packageWillBeInstalled,
                   route: const MainSearchLoader(),
                 )),
-      );
+      ));
     }
 
     if (actionEntry.action.startsWith("flatpak-uninstall:")) {
       String pkg = actionEntry.action.replaceFirst("flatpak-uninstall:", "");
       await Linux.removeApplications([pkg],
           softwareManager: SOFTWARE_MANAGERS.FLATPAK);
-      Navigator.push(
+      if (!context.mounted) return;
+      unawaited(Navigator.push(
         context,
         MaterialPageRoute(
             builder: (context) => RunCommandQueue(
@@ -348,18 +377,22 @@ class ActionHandler {
                       .uninstallingXDescription(pkg),
                   route: const MainSearchLoader(),
                 )),
-      );
+      ));
     }
 
     if (actionEntry.action.startsWith("snap-install:")) {
       String pkg = actionEntry.action.replaceFirst("snap-install:", "");
       Linux.commandQueue.add(LinuxCommand(
         userId: 0,
-        command:
-            "${Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.SNAP)} install $pkg",
+        argv: [
+          Linux.getExecutablePathOfSoftwareManager(SOFTWARE_MANAGERS.SNAP),
+          "install",
+          pkg
+        ],
         environment: {"DEBIAN_FRONTEND": "noninteractive"},
       ));
-      Navigator.push(
+      if (!context.mounted) return;
+      unawaited(Navigator.push(
         context,
         MaterialPageRoute(
             builder: (context) => RunCommandQueue(
@@ -367,14 +400,15 @@ class ActionHandler {
                   message: AppLocalizations.of(context)!.packageWillBeInstalled,
                   route: const MainSearchLoader(),
                 )),
-      );
+      ));
     }
 
     if (actionEntry.action.startsWith("snap-uninstall:")) {
       String pkg = actionEntry.action.replaceFirst("snap-uninstall:", "");
       await Linux.removeApplications([pkg],
           softwareManager: SOFTWARE_MANAGERS.SNAP);
-      Navigator.push(
+      if (!context.mounted) return;
+      unawaited(Navigator.push(
         context,
         MaterialPageRoute(
             builder: (context) => RunCommandQueue(
@@ -383,17 +417,18 @@ class ActionHandler {
                       .uninstallingXDescription(pkg),
                   route: const MainSearchLoader(),
                 )),
-      );
+      ));
     }
 
     if (actionEntry.action.startsWith("openapp:")) {
       if (Linux.currentenvironment.desktop == DESKTOPS.KDE) {
-        Linux.runCommandWithCustomArguments("kioclient",
-            ["exec", actionEntry.action.replaceFirst("openapp:", "")]);
+        unawaited(Linux.runCommandWithCustomArguments("kioclient",
+            ["exec", actionEntry.action.replaceFirst("openapp:", "")]));
       } else {
         String filepath = actionEntry.action.replaceFirst("openapp:", "");
         String file = filepath.split("/").last;
-        Linux.runCommandWithCustomArguments("/usr/bin/gtk-launch", [file]);
+        unawaited(
+            Linux.runCommandWithCustomArguments("/usr/bin/gtk-launch", [file]));
       }
 
       callback();
@@ -404,6 +439,7 @@ class ActionHandler {
     }
 
     if (actionEntry.action.startsWith("fix_package_manager")) {
+      if (!context.mounted) return;
       Linux.fixPackageManager(context);
     }
 
@@ -414,15 +450,18 @@ class ActionHandler {
     }
 
     if (actionEntry.action.startsWith("setup_snap")) {
+      if (!context.mounted) return;
       Linux.setupSnapAndSnapStore(context);
     }
 
     if (actionEntry.action.startsWith("make_administrator")) {
+      if (!context.mounted) return;
       Linux.makeCurrentUserToAdministrator(context);
     }
 
     if (actionEntry.action.startsWith("open_software_center")) {
-      Linux.openSoftwareCenter(context);
+      if (!context.mounted) return;
+      unawaited(Linux.openSoftwareCenter(context));
       callback();
     }
   }

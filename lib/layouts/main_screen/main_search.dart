@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -27,21 +26,22 @@ import 'package:window_manager/window_manager.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
 
 class MainSearch extends StatefulWidget {
-  late bool colorfulBackground;
+  final bool colorfulBackground;
 
   /// True when the search is a section of the hub rather than the whole window.
   final bool embedded;
 
-  MainSearch({super.key, this.embedded = false}) {
-    ConfigHandler configHandler = ConfigHandler();
-    // The gradient is a full-window launcher backdrop. Inside the hub it
-    // covers the content area only and fights with the surrounding chrome, so
-    // the section stays on the theme's own surface.
-    colorfulBackground = !embedded &&
-        configHandler.getValueUnsafe(
-          "colorfulBackground",
-          true,
-        );
+  MainSearch({super.key, this.embedded = false})
+      : colorfulBackground = _resolveColorfulBackground(embedded);
+
+  /// The gradient is a full-window launcher backdrop. Inside the hub it covers
+  /// the content area only and fights with the surrounding chrome, so the
+  /// section stays on the theme's own surface.
+  static bool _resolveColorfulBackground(bool embedded) {
+    if (embedded) {
+      return false;
+    }
+    return ConfigHandler().getValueUnsafe("colorfulBackground", true);
   }
 
   /// Set by the hub while it is on screen.
@@ -424,16 +424,15 @@ class _MainSearchState extends State<MainSearch> {
       if (returnToHub != null) {
         // Running inside the hub: keep the window open and hand control back.
         returnToHub();
-      } else if (Linux.currentenvironment.wayland) {
-        /// On wayland sessions we currently can't issue 'wmctrl -a'
-        /// So if we want to get the hotkey working we need to close the app
-        /// after a single use. Because otherwise everytime the user presses
-        /// the hotkey an additional window would open.
-        /// On x11 sessions we don't have the issue.
-        windowManager.minimize();
-        Future.delayed(const Duration(seconds: 5), () => exit(0));
       } else {
-        windowManager.minimize();
+        // Just minimize, on both session types. This used to quit the whole
+        // app five seconds later on Wayland, because `wmctrl -a` cannot raise
+        // a window there and the next press of the shortcut would otherwise
+        // have opened a second one. SingleInstance now hands the shortcut to
+        // the window that is already running, so there is nothing to quit for
+        // — and the user keeps a warm process instead of paying the startup
+        // cost on every use.
+        unawaited(windowManager.minimize());
       }
     }
     _lastKeyword = "";
@@ -483,6 +482,9 @@ class _MainSearchState extends State<MainSearch> {
       results = [];
     } else {
       var entries = await ActionEntryListService.getEntries();
+      // The entry list is loaded asynchronously; the search field may be gone
+      // by the time it arrives, and everything below needs a live context.
+      if (!mounted) return;
       results = entries.where((actionEntry) {
         // If entry is openfolder: and show_folders is false, skip it
         if (actionEntry.action.startsWith("openfolder:") && !listFolders) {
@@ -772,7 +774,6 @@ class _MainSearchState extends State<MainSearch> {
     hotKeyManager.register(
       hotKeyDebug,
       keyDownHandler: (hotKey) async {
-        print("DEBUG");
         // insert here function calls to debug
         // Linux.getInstalledFlatpaks();
         // Linux.getInstalledSnaps();
@@ -785,7 +786,8 @@ class _MainSearchState extends State<MainSearch> {
     var entries = await ActionEntryListService.getEntries();
     // If the main search window is present and the user has not typed anything
     if (_foundEntries.isEmpty && entries.isNotEmpty) {
-      var proposals = entries.where((e) => !e.excludeFromSearchProposal).toList();
+      var proposals =
+          entries.where((e) => !e.excludeFromSearchProposal).toList();
       if (proposals.isNotEmpty) {
         int random = Random().nextInt(proposals.length);
         if (mounted) {

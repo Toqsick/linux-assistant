@@ -93,7 +93,8 @@ class SecurityFindingTile extends StatelessWidget {
                 child: Text(
                   "${l10n.whyItMatters}: ${finding.why!}",
                   style: TextStyle(
-                    color: t.muted.withValues(alpha: HermesTokens.opacityStrong),
+                    color:
+                        t.muted.withValues(alpha: HermesTokens.opacityStrong),
                     fontSize: 12,
                     height: 1.5,
                   ),

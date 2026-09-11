@@ -1,24 +1,24 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 
+import 'package:linux_assistant/layouts/main_screen/main_search.dart';
 import 'package:linux_assistant/layouts/mint_y.dart';
 import 'package:linux_assistant/models/linux_command.dart';
 import 'package:linux_assistant/services/config_handler.dart';
 import 'package:linux_assistant/services/linux.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
 
-class RunCommandQueue extends StatelessWidget {
+class RunCommandQueue extends StatefulWidget {
   final String title;
   final String message;
   final Widget route;
   final bool offerShutdownAfterwards;
-  static bool shutdownAfterwards = false;
-  bool commandQueueCompleted = false;
 
-  RunCommandQueue({
+  const RunCommandQueue({
     super.key,
     this.message = "",
     required this.title,
@@ -27,15 +27,88 @@ class RunCommandQueue extends StatelessWidget {
   });
 
   @override
+  State<RunCommandQueue> createState() => _RunCommandQueueState();
+}
+
+class _RunCommandQueueState extends State<RunCommandQueue> {
+  /// Started exactly once, in [initState].
+  ///
+  /// This used to be `Linux.executeCommandQueue()` called from `build()`, so
+  /// every rebuild — a theme toggle while an installation is running is
+  /// enough — started the whole root queue again: a second polkit prompt, a
+  /// second `apt install`, a second `rm -rf`. `updater/updater.dart` had the
+  /// same bug and fixes it the same way.
+  Future<String>? _output;
+
+  /// The queue as it was when this page opened. [Linux.commandQueue] itself is
+  /// global and is cleared by the "next" button, so the table needs its own
+  /// copy to survive a rebuild.
+  List<LinuxCommand> _commands = const [];
+
+  bool _commandQueueCompleted = false;
+  bool _shutdownAfterwards = false;
+  HotKey? _enterHotkey;
+
+  @override
+  void initState() {
+    super.initState();
+    _commands = List<LinuxCommand>.from(Linux.commandQueue);
+    if (_commands.isNotEmpty) {
+      _output = Linux.executeCommandQueue();
+      _registerEnterHotkey();
+    }
+  }
+
+  @override
+  void dispose() {
+    final HotKey? hotkey = _enterHotkey;
+    if (hotkey != null) {
+      unawaited(hotKeyManager.unregister(hotkey));
+    }
+    super.dispose();
+  }
+
+  void _registerEnterHotkey() {
+    final HotKey enter = HotKey(
+      key: PhysicalKeyboardKey.enter,
+      scope: HotKeyScope.inapp,
+    );
+    _enterHotkey = enter;
+    unawaited(hotKeyManager.register(enter, keyDownHandler: (hotKey) {
+      if (!mounted || !_commandQueueCompleted) {
+        return;
+      }
+      _continueAfterQueue(context);
+    }));
+  }
+
+  /// Where "continue" leads once the queue has run.
+  ///
+  /// With the hub running underneath, pushing the usual fullscreen
+  /// [widget.route] stranded the user: that search cannot be dismissed (its
+  /// clear() hands control back to the hub below instead of popping) and its
+  /// loader wipes the embedded search's in-app hotkeys via unregisterAll.
+  /// Popping back to the hub is the correct "continue" there.
+  void _continueAfterQueue(BuildContext context) {
+    Linux.clearCommandQueue();
+    if (MainSearch.onDismiss != null) {
+      Navigator.of(context).pop();
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => widget.route,
+        ),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (Linux.commandQueue.isEmpty) {
-      return route;
+    if (_commands.isEmpty) {
+      return widget.route;
     }
 
-    initHotkeysForKeyboardUse(context);
-
     // Build data for table
-    List<LinuxCommand> commands = Linux.commandQueue;
     List<List<String>> tableData = [
       [
         AppLocalizations.of(context)!.command,
@@ -43,9 +116,9 @@ class RunCommandQueue extends StatelessWidget {
         AppLocalizations.of(context)!.root
       ]
     ];
-    for (LinuxCommand command in commands) {
+    for (LinuxCommand command in _commands) {
       tableData.add([
-        command.command,
+        command.displayCommand,
         // command.description,
         command.userId == 0
             ? AppLocalizations.of(context)!.yes
@@ -53,20 +126,21 @@ class RunCommandQueue extends StatelessWidget {
       ]);
     }
 
-    Future<String> output = Linux.executeCommandQueue();
     return FutureBuilder<String>(
-      future: output,
+      future: _output,
       builder: (context, snapshot) {
         if (snapshot.hasData) {
-          if (offerShutdownAfterwards && shutdownAfterwards) {
-            Linux.shutdown();
+          if (!_commandQueueCompleted) {
+            _commandQueueCompleted = true;
+            if (widget.offerShutdownAfterwards && _shutdownAfterwards) {
+              Linux.shutdown();
+            }
           }
-          commandQueueCompleted = true;
           return MintYPage(
-            title: title,
+            title: widget.title,
             contentElements: [
               Text(
-                message,
+                widget.message,
                 style: Theme.of(context).textTheme.headlineMedium,
                 textAlign: TextAlign.center,
               ),
@@ -82,7 +156,7 @@ class RunCommandQueue extends StatelessWidget {
                           style: Theme.of(context).textTheme.bodyMedium,
                           textAlign: TextAlign.center,
                         ),
-                        SizedBox(
+                        const SizedBox(
                           height: 16,
                         ),
                         MintYButton(
@@ -95,11 +169,11 @@ class RunCommandQueue extends StatelessWidget {
                             Navigator.of(context).push(
                               MaterialPageRoute(
                                   builder: (context) => RunCommandQueue(
-                                        route: route,
-                                        title: title,
-                                        message: message,
+                                        route: widget.route,
+                                        title: widget.title,
+                                        message: widget.message,
                                         offerShutdownAfterwards:
-                                            offerShutdownAfterwards,
+                                            widget.offerShutdownAfterwards,
                                       )),
                             );
                           },
@@ -167,11 +241,13 @@ class RunCommandQueue extends StatelessWidget {
                 const SizedBox(
                   width: 10,
                 ),
-                MintYButtonNext(
-                  route: route,
-                  onPressed: () {
-                    Linux.clearCommandQueue();
-                  },
+                MintYButton(
+                  text: Text(
+                    AppLocalizations.of(context)!.next,
+                    style: MintY.heading4White,
+                  ),
+                  color: MintY.currentColor,
+                  onPressed: () => _continueAfterQueue(context),
                 ),
               ],
             ),
@@ -179,12 +255,12 @@ class RunCommandQueue extends StatelessWidget {
         } else {
           // Loading Screen
           return MintYPage(
-            title: title,
+            title: widget.title,
             contentElements: [
               Column(
                 children: [
                   Text(
-                    message,
+                    widget.message,
                     style: Theme.of(context).textTheme.headlineMedium,
                     textAlign: TextAlign.center,
                   ),
@@ -201,8 +277,15 @@ class RunCommandQueue extends StatelessWidget {
                   const SizedBox(
                     height: 8,
                   ),
-                  offerShutdownAfterwards
-                      ? const ShutdownCheckbox()
+                  widget.offerShutdownAfterwards
+                      ? ShutdownCheckbox(
+                          value: _shutdownAfterwards,
+                          onChanged: (bool value) {
+                            setState(() {
+                              _shutdownAfterwards = value;
+                            });
+                          },
+                        )
                       : Container(),
                 ],
               ),
@@ -212,33 +295,18 @@ class RunCommandQueue extends StatelessWidget {
       },
     );
   }
-
-  void initHotkeysForKeyboardUse(BuildContext context) {
-    HotKey enter = HotKey(
-      key: PhysicalKeyboardKey.enter,
-      scope: HotKeyScope.inapp,
-    );
-    hotKeyManager.register(enter, keyDownHandler: (hotKey) {
-      if (commandQueueCompleted) {
-        Linux.clearCommandQueue();
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => route,
-          ),
-        );
-      }
-    });
-  }
 }
 
-class ShutdownCheckbox extends StatefulWidget {
-  const ShutdownCheckbox({super.key});
+class ShutdownCheckbox extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool> onChanged;
 
-  @override
-  State<ShutdownCheckbox> createState() => _ShutdownCheckboxState();
-}
+  const ShutdownCheckbox({
+    super.key,
+    required this.value,
+    required this.onChanged,
+  });
 
-class _ShutdownCheckboxState extends State<ShutdownCheckbox> {
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -246,12 +314,9 @@ class _ShutdownCheckboxState extends State<ShutdownCheckbox> {
       children: [
         Checkbox(
           fillColor:
-              MaterialStateColor.resolveWith((states) => MintY.currentColor),
-          value: RunCommandQueue.shutdownAfterwards,
-          onChanged: (value) {
-            RunCommandQueue.shutdownAfterwards = value!;
-            setState(() {});
-          },
+              WidgetStateColor.resolveWith((states) => MintY.currentColor),
+          value: value,
+          onChanged: (bool? newValue) => onChanged(newValue ?? false),
         ),
         Text(
           AppLocalizations.of(context)!.shutdownAfterwards,

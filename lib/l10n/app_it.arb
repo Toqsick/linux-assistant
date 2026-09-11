@@ -1220,5 +1220,57 @@
     "placeholders": {},
     "description": "",
     "type": "text"
+  },
+  "deleteSnapshotQuestion": "Eliminare lo snapshot \"{snapshot}\"?",
+  "@deleteSnapshotQuestion": {
+    "placeholders": {
+      "snapshot": {
+        "type": "String"
+      }
+    },
+    "description": "Confirmation before a Timeshift snapshot is removed",
+    "type": "text"
+  },
+  "deleteSnapshotWarning": "L'operazione non è reversibile. Se questo è l'unico snapshot, non resterà nulla a cui tornare.",
+  "@deleteSnapshotWarning": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "securityCheckScriptErrorTitle": "Controllo di sicurezza non riuscito",
+  "@securityCheckScriptErrorTitle": {
+    "placeholders": {},
+    "description": "Shown when the checker script itself crashed",
+    "type": "text"
+  },
+  "securityCheckScriptErrorBody": "Lo script di controllo si è arrestato dopo la concessione dei privilegi di root. È un bug di Linux Assistant, non un problema di permessi. Dettagli per una segnalazione:",
+  "@securityCheckScriptErrorBody": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "themeModeSetting": "Tema",
+  "@themeModeSetting": {
+    "placeholders": {},
+    "description": "Label above the three-way theme chooser in the appearance settings",
+    "type": "text"
+  },
+  "themeModeSystem": "Sistema",
+  "@themeModeSystem": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "themeModeLight": "Chiaro",
+  "@themeModeLight": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
+  },
+  "themeModeDark": "Scuro",
+  "@themeModeDark": {
+    "placeholders": {},
+    "description": "",
+    "type": "text"
   }
 }

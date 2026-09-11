@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:linux_assistant/layouts/greeter/start_after_installation.dart';
 import 'package:linux_assistant/layouts/mint_y.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
+import 'package:linux_assistant/services/config_handler.dart';
 import 'package:linux_assistant/services/linux.dart';
 
 class ActivateHotkeyQuestion extends StatelessWidget {
-  late Widget? route;
-  ActivateHotkeyQuestion({super.key, this.route});
+  final Widget route;
+  const ActivateHotkeyQuestion(
+      {super.key, this.route = const StartAfterInstallationRoutineQuestion()});
 
   @override
   Widget build(BuildContext context) {
-    route ??= const StartAfterInstallationRoutineQuestion();
     return MintYPage(
       title: AppLocalizations.of(context)!.activateHotkey,
       contentElements: [
@@ -24,7 +25,7 @@ class ActivateHotkeyQuestion extends StatelessWidget {
         ),
         Text(
           AppLocalizations.of(context)!
-              .openLinuxAssistantFasterDescription(Linux.get_hotkey_modifier()),
+              .openLinuxAssistantFasterDescription(Linux.getHotkeyModifier()),
           style: Theme.of(context).textTheme.bodyLarge,
           textAlign: TextAlign.center,
         ),
@@ -33,7 +34,7 @@ class ActivateHotkeyQuestion extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           MintYButtonNavigate(
-            route: route!,
+            route: route,
             text: Text(
               AppLocalizations.of(context)!.skip,
               style: MintY.heading4,
@@ -42,15 +43,22 @@ class ActivateHotkeyQuestion extends StatelessWidget {
           const SizedBox(
             width: 16,
           ),
-          MintYButtonNavigate(
-            route: route!,
-            text: Text(
-              AppLocalizations.of(context)!.yesSetUpHotkey,
-              style: MintY.heading4White,
-            ),
-            color: MintY.currentColor,
-            onPressed: () {
-              Linux.activateSystemHotkeyForLinuxAssistant();
+          MintYButtonNext(
+            route: route,
+            // Awaited, and the result is shown. The button used to fire the
+            // registration and navigate away in the same frame, so a failure
+            // was invisible — and a second press queued a second run.
+            onPressedFuture: () async {
+              // Mirror of main.dart: on X11 the app itself grabs the key via
+              // libkeybinder, and a desktop shortcut on top of that fires
+              // twice per press (raise plus a second process).
+              final bool ok = Linux.currentenvironment.wayland
+                  ? await Linux.activateSystemHotkeyForLinuxAssistant()
+                  : true;
+              // Only remember it when it worked. main.dart skips the
+              // registration on later starts based on this flag, so writing
+              // it unconditionally would make a failed setup permanent.
+              await ConfigHandler().setValue("keybinding_registered", ok);
             },
           ),
         ],

@@ -78,8 +78,7 @@ class _StorageSectionState extends State<StorageSection> {
   Widget _diskCard(BuildContext context, DeviceInfo disk, HermesTokens t) {
     final bool critical = disk.usedPercent > 90;
     final bool warning = !critical && disk.usedPercent > 75;
-    final Color color =
-        critical ? t.error : (warning ? t.warning : t.accent);
+    final Color color = critical ? t.error : (warning ? t.warning : t.accent);
 
     return HermesCard(
       spineColor: critical ? t.error : null,

@@ -1124,4 +1124,32 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get whyYay =>
       'AUR helpers install community packages that nobody reviewed for you.';
+
+  @override
+  String deleteSnapshotQuestion(String snapshot) {
+    return 'Delete the snapshot \"$snapshot\"?';
+  }
+
+  @override
+  String get deleteSnapshotWarning =>
+      'This cannot be undone. If this is the only snapshot, there is nothing left to roll back to.';
+
+  @override
+  String get securityCheckScriptErrorTitle => 'Security check failed';
+
+  @override
+  String get securityCheckScriptErrorBody =>
+      'The checker crashed after root access was granted. This is a bug in Linux Assistant, not a permissions problem. Details for a bug report:';
+
+  @override
+  String get themeModeSetting => 'Theme';
+
+  @override
+  String get themeModeSystem => 'System';
+
+  @override
+  String get themeModeLight => 'Light';
+
+  @override
+  String get themeModeDark => 'Dark';
 }

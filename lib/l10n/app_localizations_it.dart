@@ -1141,4 +1141,33 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get whyYay =>
       'Gli helper AUR installano pacchetti della community che nessuno ha verificato per te.';
+
+  @override
+  String deleteSnapshotQuestion(String snapshot) {
+    return 'Eliminare lo snapshot \"$snapshot\"?';
+  }
+
+  @override
+  String get deleteSnapshotWarning =>
+      'L\'operazione non è reversibile. Se questo è l\'unico snapshot, non resterà nulla a cui tornare.';
+
+  @override
+  String get securityCheckScriptErrorTitle =>
+      'Controllo di sicurezza non riuscito';
+
+  @override
+  String get securityCheckScriptErrorBody =>
+      'Lo script di controllo si è arrestato dopo la concessione dei privilegi di root. È un bug di Linux Assistant, non un problema di permessi. Dettagli per una segnalazione:';
+
+  @override
+  String get themeModeSetting => 'Tema';
+
+  @override
+  String get themeModeSystem => 'Sistema';
+
+  @override
+  String get themeModeLight => 'Chiaro';
+
+  @override
+  String get themeModeDark => 'Scuro';
 }

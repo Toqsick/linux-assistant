@@ -10,12 +10,8 @@ class FeedbackDialog extends StatefulWidget {
   final List<ActionEntry> foundEntries;
 
   final bool calledFromHome;
-  bool includeSearchTermAndResults = true;
-  bool includeBasicSystemInformation = true;
 
-  String message = "";
-
-  FeedbackDialog(
+  const FeedbackDialog(
       {super.key,
       required this.calledFromHome,
       this.searchText = "",
@@ -27,6 +23,17 @@ class FeedbackDialog extends StatefulWidget {
 
 class _FeedbackDialogState extends State<FeedbackDialog> {
   final messageController = TextEditingController();
+
+  // Checkbox state belongs to the state object. It used to be written back
+  // into the widget, which Flutter is free to replace on any rebuild.
+  bool _includeSearchTermAndResults = true;
+  bool _includeBasicSystemInformation = true;
+
+  @override
+  void dispose() {
+    messageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,9 +71,9 @@ class _FeedbackDialogState extends State<FeedbackDialog> {
                 children: [
                   Checkbox(
                       activeColor: MintY.currentColor,
-                      value: widget.includeSearchTermAndResults,
+                      value: _includeSearchTermAndResults,
                       onChanged: ((value) => setState(() {
-                            widget.includeSearchTermAndResults = value!;
+                            _includeSearchTermAndResults = value!;
                           }))),
                   Text(
                     AppLocalizations.of(context)!.includeSearchTermAndResults,
@@ -78,9 +85,9 @@ class _FeedbackDialogState extends State<FeedbackDialog> {
               children: [
                 Checkbox(
                     activeColor: MintY.currentColor,
-                    value: widget.includeBasicSystemInformation,
+                    value: _includeBasicSystemInformation,
                     onChanged: ((value) => setState(() {
-                          widget.includeBasicSystemInformation = value!;
+                          _includeBasicSystemInformation = value!;
                         }))),
                 Text(
                   AppLocalizations.of(context)!.includeBasicSystemInformation,
@@ -113,14 +120,14 @@ class _FeedbackDialogState extends State<FeedbackDialog> {
                     style: MintY.heading4White,
                   ),
                   onPressed: () {
-                    Future<bool> success = FeedbackService.send_feedback(
+                    Future<bool> success = FeedbackService.sendFeedback(
                         messageController.text,
                         widget.foundEntries,
                         widget.searchText,
-                        widget.includeBasicSystemInformation,
+                        _includeBasicSystemInformation,
                         widget.calledFromHome
                             ? false
-                            : widget.includeSearchTermAndResults);
+                            : _includeSearchTermAndResults);
                     Navigator.of(context).pop();
                     showDialog(
                       context: context,
@@ -136,9 +143,5 @@ class _FeedbackDialogState extends State<FeedbackDialog> {
         ),
       ),
     );
-  }
-
-  void updateMessage(message) {
-    widget.message = message;
   }
 }

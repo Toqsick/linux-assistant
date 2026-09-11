@@ -78,8 +78,8 @@ void main() {
       const cream = Color(0xFFFEFCF7);
       final fixed = HermesTokens.accessibleOn(gold, cream);
 
-      expect(HermesTokens.contrastRatio(fixed, cream),
-          greaterThanOrEqualTo(4.5));
+      expect(
+          HermesTokens.contrastRatio(fixed, cream), greaterThanOrEqualTo(4.5));
       expect(HermesTokens.relativeLuminance(fixed),
           lessThan(HermesTokens.relativeLuminance(gold)));
     });
@@ -89,8 +89,8 @@ void main() {
       const black = Color(0xFF0D0D1A);
       final fixed = HermesTokens.accessibleOn(navy, black);
 
-      expect(HermesTokens.contrastRatio(fixed, black),
-          greaterThanOrEqualTo(4.5));
+      expect(
+          HermesTokens.contrastRatio(fixed, black), greaterThanOrEqualTo(4.5));
       expect(HermesTokens.relativeLuminance(fixed),
           greaterThan(HermesTokens.relativeLuminance(navy)));
     });
@@ -161,8 +161,8 @@ void main() {
       expect(MintY.heading1.color, isNull);
       expect(MintY.themeDark().textTheme.bodyMedium!.color,
           HermesTokens.dark.text);
-      expect(MintY.theme().textTheme.bodyMedium!.color,
-          HermesTokens.light.text);
+      expect(
+          MintY.theme().textTheme.bodyMedium!.color, HermesTokens.light.text);
     });
 
     test("colorfulBackground tracks later color changes", () {
@@ -170,8 +170,7 @@ void main() {
       addTearDown(() => MintY.currentColor = original);
 
       MintY.currentColor = const Color(0xFF123456);
-      final gradient =
-          MintY.colorfulBackground.gradient as LinearGradient;
+      final gradient = MintY.colorfulBackground.gradient as LinearGradient;
       expect(gradient.colors.first, const Color(0xFF123456));
     });
   });

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:linux_assistant/l10n/app_localizations.dart';
@@ -285,31 +286,29 @@ class MintY {
         return Dialog(
           child: Padding(
             padding: const EdgeInsets.all(40.0),
-            child: Container(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Flexible(
-                    child: Text(
-                      message,
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(
+                    message,
+                    style: Theme.of(context).textTheme.bodyLarge,
                   ),
-                  const SizedBox(
-                    height: 32,
+                ),
+                const SizedBox(
+                  height: 32,
+                ),
+                MintYButton(
+                  text: Text(
+                    AppLocalizations.of(context)!.close,
+                    style: MintY.heading3,
                   ),
-                  MintYButton(
-                    text: Text(
-                      AppLocalizations.of(context)!.close,
-                      style: MintY.heading3,
-                    ),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      callback?.call();
-                    },
-                  )
-                ],
-              ),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    callback?.call();
+                  },
+                )
+              ],
             ),
           ),
         );
@@ -319,22 +318,17 @@ class MintY {
 }
 
 class MintYPage extends StatelessWidget {
-  late String title;
-  late List<Widget> contentElements;
-  late Widget customContentElement;
-  Widget? bottom;
+  final String title;
+  final List<Widget> contentElements;
+  final Widget customContentElement;
+  final Widget? bottom;
 
   MintYPage(
       {super.key,
-      String title = "",
-      List<Widget> contentElements = const [],
-      Widget customContentElement = const Text(""),
-      Widget? bottom}) {
-    this.title = title;
-    this.contentElements = contentElements;
-    this.customContentElement = customContentElement;
-    this.bottom = bottom;
-  }
+      this.title = "",
+      this.contentElements = const [],
+      this.customContentElement = const Text(""),
+      this.bottom});
 
   final ScrollController scrollController = ScrollController();
 
@@ -395,47 +389,42 @@ class MintYPage extends StatelessWidget {
 }
 
 class MintYButton extends StatelessWidget {
-  late Widget text;
-  late IconData? icon;
+  final Widget text;
+  final IconData? icon;
 
   /// deprecated, use [textColor] and [backgroundColor] instead
-  late Color color;
-  late Color backgroundColor;
+  final Color color;
+  final Color backgroundColor;
 
   /// Only used for icon color currently:
-  late Color textColor;
-  VoidCallback? onPressed;
-  late double width;
-  late double height;
-  late String? tooltip;
+  final Color textColor;
+  final VoidCallback? onPressed;
+  final double width;
+  final double height;
+  final String? tooltip;
 
-  MintYButton(
+  const MintYButton(
       {super.key,
       this.text = const Text(""),
       this.icon,
 
       /// deprecated, use [textColor] and [backgroundColor] instead
       Color color = const Color.fromARGB(0, 0, 0, 0),
-      this.backgroundColor = const Color.fromARGB(0, 0, 0, 0),
+      Color backgroundColor = const Color.fromARGB(0, 0, 0, 0),
 
       /// Only used for icon color currently:
       this.textColor = const Color.fromARGB(255, 255, 255, 255),
       this.tooltip,
-      VoidCallback? onPressed,
-      double width = 110,
-      double height = 40}) {
-    text = text;
-    this.color = color;
-    this.onPressed = onPressed;
-    this.width = width;
-    this.height = height;
-
-    if (backgroundColor == const Color.fromARGB(0, 0, 0, 0)) {
-      this.backgroundColor = color;
-    } else {
-      this.backgroundColor = backgroundColor;
-    }
-  }
+      this.onPressed,
+      this.width = 110,
+      this.height = 40})
+      : color = color,
+        // An unset backgroundColor falls back to the deprecated [color]. The
+        // old constructor body did this by assigning its own fields, which
+        // also contained two no-op self-assignments (`text = text;`).
+        backgroundColor = backgroundColor == const Color.fromARGB(0, 0, 0, 0)
+            ? color
+            : backgroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -492,25 +481,24 @@ class MintYButton extends StatelessWidget {
 }
 
 class MintYButtonNavigate extends StatelessWidget {
-  late Widget route;
+  final Widget route;
 
   /// will be called before the button navigates
-  late VoidCallback? onPressed;
+  final VoidCallback? onPressed;
 
-  late Text text;
-  late Color color;
-  late double width;
-  late double height;
+  final Text text;
+  final Color color;
+  final double width;
+  final double height;
 
-  MintYButtonNavigate(
+  const MintYButtonNavigate(
       {required this.route,
       this.text = const Text("Text"),
       this.color = const Color.fromARGB(255, 232, 232, 232),
       this.width = 110,
       this.height = 40,
       this.onPressed,
-      Key? key})
-      : super(key: key);
+      super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -531,17 +519,16 @@ class MintYButtonNavigate extends StatelessWidget {
 }
 
 class MintYButtonNext extends StatelessWidget {
-  late Widget route;
+  final Widget route;
 
   /// will be called before the button navigates
-  late VoidCallback? onPressed;
+  final VoidCallback? onPressed;
 
   /// will be called before the button navigates
-  late AsyncCallback? onPressedFuture;
+  final AsyncCallback? onPressedFuture;
 
-  MintYButtonNext(
-      {required this.route, this.onPressed, this.onPressedFuture, Key? key})
-      : super(key: key);
+  const MintYButtonNext(
+      {required this.route, this.onPressed, this.onPressedFuture, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -554,15 +541,16 @@ class MintYButtonNext extends StatelessWidget {
       onPressed: () async {
         onPressed?.call();
         if (onPressedFuture != null) {
-          Navigator.of(context).push(MaterialPageRoute(
+          unawaited(Navigator.of(context).push(MaterialPageRoute(
             builder: (context) => const MintYLoadingPage(),
-          ));
+          )));
           await onPressedFuture!.call();
         }
-        Navigator.push(
+        if (!context.mounted) return;
+        unawaited(Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => route),
-        );
+        ));
       },
     );
   }
@@ -572,10 +560,13 @@ class MintYSelectableCardWithIcon extends StatefulWidget {
   final Widget icon;
   final String title;
   final String text;
-  bool selected;
+
+  /// Initial selection. The current one lives in the state — the widget is
+  /// rebuilt from its parent and must not carry the toggle itself.
+  final bool selected;
   final VoidCallback? onPressed;
 
-  MintYSelectableCardWithIcon(
+  const MintYSelectableCardWithIcon(
       {this.icon = const Icon(Icons.umbrella),
       this.title = "Title",
       this.text = "Lorem ipsum...",
@@ -590,9 +581,7 @@ class MintYSelectableCardWithIcon extends StatefulWidget {
 
 class _MintYSelectableCardWithIconState
     extends State<MintYSelectableCardWithIcon> {
-  _MintYSelectableCardWithIconState();
-
-  void localOnPressed() {}
+  late bool _selected = widget.selected;
 
   @override
   Widget build(BuildContext context) {
@@ -601,7 +590,7 @@ class _MintYSelectableCardWithIconState
         child: InkWell(
           onTap: () {
             setState(() {
-              widget.selected = !widget.selected;
+              _selected = !_selected;
             });
             widget.onPressed?.call();
           },
@@ -613,7 +602,7 @@ class _MintYSelectableCardWithIconState
               Container(
                 padding: const EdgeInsets.all(10),
                 height: 30,
-                child: widget.selected
+                child: _selected
                     ? Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
@@ -650,20 +639,22 @@ class _MintYSelectableCardWithIconState
 }
 
 class MintYSelectableEntryWithIconHorizontal extends StatefulWidget {
-  late Widget icon;
-  late String title;
-  late String text;
-  late bool selected;
+  final Widget icon;
+  final String title;
+  final String text;
+
+  /// Initial selection. The current one lives in the state.
+  final bool selected;
 
   /// Shows only info text if [selected] == [showInfoTextAtThisSelectionState]
-  late Text? infoText;
+  final Text? infoText;
 
   /// Shows only info text if [selected] == [showInfoTextAtThisSelectionState]
-  bool showInfoTextAtThisSelectionState = false;
+  final bool showInfoTextAtThisSelectionState;
 
-  VoidCallback? onPressed;
+  final VoidCallback? onPressed;
 
-  MintYSelectableEntryWithIconHorizontal(
+  const MintYSelectableEntryWithIconHorizontal(
       {this.icon = const Icon(Icons.umbrella),
       this.title = "Title",
       this.text = "Lorem Ipsum...",
@@ -680,6 +671,8 @@ class MintYSelectableEntryWithIconHorizontal extends StatefulWidget {
 
 class _MintYSelectableEntryWithIconHorizontalState
     extends State<MintYSelectableEntryWithIconHorizontal> {
+  late bool _selected = widget.selected;
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -688,7 +681,7 @@ class _MintYSelectableEntryWithIconHorizontalState
         child: InkWell(
           onTap: () {
             setState(() {
-              widget.selected = !widget.selected;
+              _selected = !_selected;
             });
             widget.onPressed?.call();
           },
@@ -730,7 +723,7 @@ class _MintYSelectableEntryWithIconHorizontalState
                       ),
                       widget.infoText != null &&
                               widget.showInfoTextAtThisSelectionState ==
-                                  widget.selected
+                                  _selected
                           ? Padding(
                               padding: const EdgeInsets.all(8.0),
                               child: widget.infoText!,
@@ -744,7 +737,7 @@ class _MintYSelectableEntryWithIconHorizontalState
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Container(
-                      child: widget.selected
+                      child: _selected
                           ? Row(
                               mainAxisAlignment: MainAxisAlignment.end,
                               children: [
@@ -769,23 +762,18 @@ class _MintYSelectableEntryWithIconHorizontalState
 }
 
 class MintYButtonBigWithIcon extends StatelessWidget {
-  late Widget icon;
-  late String title;
-  late String text;
-  VoidCallback? onPressed;
+  final Widget icon;
+  final String title;
+  final String text;
+  final VoidCallback? onPressed;
 
-  MintYButtonBigWithIcon({
-    Key? key,
-    Widget icon = const Icon(Icons.umbrella),
-    String title = "Title",
-    String text = "Lorem ipsum...",
-    VoidCallback? onPressed,
-  }) : super(key: key) {
-    this.icon = icon;
-    this.title = title;
-    this.text = text;
-    this.onPressed = onPressed;
-  }
+  const MintYButtonBigWithIcon({
+    super.key,
+    this.icon = const Icon(Icons.umbrella),
+    this.title = "Title",
+    this.text = "Lorem ipsum...",
+    this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -821,22 +809,22 @@ class MintYButtonBigWithIcon extends StatelessWidget {
 }
 
 class MintYCardWithIconAndAction extends StatelessWidget {
-  late Widget icon;
-  late String title;
-  late String text;
-  late String buttonText;
-  late Widget? customWidgetBetweenButtonAndText;
-  VoidCallback? onPressed;
+  final Widget icon;
+  final String title;
+  final String text;
+  final String buttonText;
+  final Widget? customWidgetBetweenButtonAndText;
+  final VoidCallback? onPressed;
 
-  MintYCardWithIconAndAction({
-    Key? key,
+  const MintYCardWithIconAndAction({
+    super.key,
     this.icon = const Text(""),
     this.title = "Title",
     this.text = "Lorem ipsum...",
     this.buttonText = "Button",
     this.customWidgetBetweenButtonAndText,
     this.onPressed,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -897,11 +885,11 @@ class MintYCardWithIconAndAction extends StatelessWidget {
 }
 
 class MintYGrid extends StatelessWidget {
-  List<Widget> children;
-  double padding;
-  double ratio;
-  double widgetSize;
-  MintYGrid(
+  final List<Widget> children;
+  final double padding;
+  final double ratio;
+  final double widgetSize;
+  const MintYGrid(
       {super.key,
       required this.children,
       this.padding = 10.0,
@@ -939,10 +927,10 @@ class MintYGrid extends StatelessWidget {
 
 /// Icon on the left side, on the right side heading with description.
 class MintYFeature extends StatelessWidget {
-  String heading;
-  String description;
-  Widget icon;
-  MintYFeature(
+  final String heading;
+  final String description;
+  final Widget icon;
+  const MintYFeature(
       {super.key,
       required this.heading,
       required this.description,
@@ -981,7 +969,7 @@ class MintYFeature extends StatelessWidget {
 }
 
 class MintYProgressIndicatorCircle extends StatelessWidget {
-  const MintYProgressIndicatorCircle({Key? key}) : super(key: key);
+  const MintYProgressIndicatorCircle({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -998,8 +986,8 @@ class MintYProgressIndicatorCircle extends StatelessWidget {
 /// data should be a 2D list of strings
 /// First row are headings
 class MintYTable extends StatelessWidget {
-  List<List<dynamic>> data;
-  MintYTable({super.key, required this.data});
+  final List<List<dynamic>> data;
+  const MintYTable({super.key, required this.data});
 
   @override
   Widget build(BuildContext context) {
@@ -1035,7 +1023,7 @@ class MintYTable extends StatelessWidget {
 /// As default text "Loading..." will be taken.
 class MintYLoadingPage extends StatelessWidget {
   final String text;
-  const MintYLoadingPage({Key? key, this.text = ""}) : super(key: key);
+  const MintYLoadingPage({super.key, this.text = ""});
 
   @override
   Widget build(BuildContext context) {
@@ -1064,13 +1052,15 @@ class MintYLoadingPage extends StatelessWidget {
 }
 
 class MintYCheckboxSetting extends StatefulWidget {
-  late String text;
-  late bool value;
+  final String text;
+
+  /// Initial value; the current one lives in the state.
+  final bool value;
 
   /// Callback function that takes as parameter the new value of the setting
-  late Function(bool) onChanged;
+  final Function(bool) onChanged;
 
-  MintYCheckboxSetting(
+  const MintYCheckboxSetting(
       {super.key,
       required this.text,
       required this.value,
@@ -1081,6 +1071,8 @@ class MintYCheckboxSetting extends StatefulWidget {
 }
 
 class _MintYCheckboxSettingState extends State<MintYCheckboxSetting> {
+  late bool _value = widget.value;
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -1093,12 +1085,12 @@ class _MintYCheckboxSettingState extends State<MintYCheckboxSetting> {
             style: Theme.of(context).textTheme.headlineMedium,
           ),
           Checkbox(
-            value: widget.value,
+            value: _value,
             onChanged: (bool? newValue) {
               setState(() {
-                widget.value = newValue!;
-                widget.onChanged.call(newValue);
+                _value = newValue!;
               });
+              widget.onChanged.call(newValue!);
             },
             activeColor: MintY.currentColor,
           ),
@@ -1109,12 +1101,12 @@ class _MintYCheckboxSettingState extends State<MintYCheckboxSetting> {
 }
 
 class MintYTextSetting extends StatefulWidget {
-  late String text;
-  late String value;
-  late TextAlign textAlign;
-  late Function(String) onChanged;
+  final String text;
+  final String value;
+  final TextAlign textAlign;
+  final Function(String) onChanged;
 
-  MintYTextSetting(
+  const MintYTextSetting(
       {super.key,
       required this.text,
       required this.value,

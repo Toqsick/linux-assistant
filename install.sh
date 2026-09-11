@@ -88,13 +88,16 @@ if BIN_PATH="$(command -v linux-assistant 2>/dev/null)"; then
     fi
 fi
 
-MANUAL_DESKTOP=""
+# An array, not a space-joined string: a path containing a space used to be
+# split into two, and the loop below then tried to delete both halves.
+MANUAL_DESKTOP_FILES=()
 for d in /usr/share/applications ~/.local/share/applications; do
     [ -d "$d" ] || continue
     while IFS= read -r f; do
-        dpkg-query -S "$f" >/dev/null 2>&1 || MANUAL_DESKTOP="$MANUAL_DESKTOP $f"
+        dpkg-query -S "$f" >/dev/null 2>&1 || MANUAL_DESKTOP_FILES+=("$f")
     done < <(find "$d" -maxdepth 1 -iname '*linux*assistant*.desktop' 2>/dev/null)
 done
+MANUAL_DESKTOP="${MANUAL_DESKTOP_FILES[*]:-}"
 
 [ -n "$OLD_DEB_VERSION" ] && info "deb-Installation gefunden: $OLD_DEB_VERSION"
 [ -n "$OLD_FLATPAK" ]     && info "Flatpak gefunden: $APP_ID_FLATPAK"
@@ -130,7 +133,9 @@ if [ -n "$MANUAL_BIN" ]; then
     fi
 fi
 
-for f in $MANUAL_DESKTOP; do
+# Quoted through an array: an unquoted expansion word-splits a path that
+# contains a space and then deletes the wrong thing.
+for f in "${MANUAL_DESKTOP_FILES[@]}"; do
     warn "$f gehört zu keinem Paket."
     if confirm "Starter löschen?"; then
         if [ -w "$(dirname "$f")" ]; then rm -f "$f"; else sudo rm -f "$f"; fi
@@ -161,6 +166,8 @@ step "4. Reste"
 
 if [ "$PURGE" = "1" ]; then
     rm -rf ~/.config/linux-assistant ~/.cache/linux-assistant
+    # Written by the command-queue with underscores, unlike everything else.
+    rm -f ~/.cache/linux_assistant_commands
     info "Einstellungen und Cache gelöscht."
 else
     for d in ~/.config/linux-assistant ~/.cache/linux-assistant; do
@@ -170,9 +177,10 @@ else
     done
 fi
 
-# The app registers its shortcut through gsettings and appends a new entry each
-# time, without checking for one it already made. Over several installs those
-# add up, and a removal never takes them away.
+# The app looks for an entry it already owns before adding one, but the
+# duplicates earlier versions left behind are still in the desktop's settings —
+# a package removal never takes them away, because they do not belong to the
+# package.
 if command -v gsettings >/dev/null 2>&1 && [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
     SCHEMA="org.gnome.settings-daemon.plugins.media-keys"
     BASE="/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings"
@@ -207,6 +215,17 @@ if command -v gsettings >/dev/null 2>&1 && [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" 
                         list="$list'$p'"
                     done
                     gsettings set "$SCHEMA" custom-keybindings "$list]"
+                    # Dropping a path from the list leaves its keys in dconf,
+                    # so the next `custom0` inherits an old name, command and
+                    # binding. Reset the subtree of everything we dropped.
+                    if command -v dconf >/dev/null 2>&1; then
+                        for p in "${DROP[@]}"; do
+                            case " ${remaining[*]} " in
+                                *" $p "*) continue ;;
+                            esac
+                            dconf reset -f "$p" 2>/dev/null || true
+                        done
+                    fi
                     info "Bereinigt."
                 fi
             fi
@@ -214,8 +233,61 @@ if command -v gsettings >/dev/null 2>&1 && [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" 
     fi
 fi
 
+# Cinnamon: same dconf structure as GNOME under a different schema. XFCE is
+# one targeted property per modifier. KDE writes ini blocks in khotkeysrc
+# whose safe removal needs the python helpers the package removal just
+# deleted, so KDE gets an explicit hint instead of a fragile sed.
+if [ "$PURGE" = "1" ] && command -v gsettings >/dev/null 2>&1 \
+        && [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+    CIN_SCHEMA="org.cinnamon.desktop.keybindings"
+    if gsettings list-schemas 2>/dev/null | grep -qx "$CIN_SCHEMA"; then
+        KEEP=()
+        DROP=()
+        while IFS= read -r path; do
+            [ -n "$path" ] || continue
+            cmd="$(gsettings get "$CIN_SCHEMA.custom-keybinding:$path" command 2>/dev/null || echo "")"
+            if [[ "$cmd" == *linux-assistant* ]]; then DROP+=("$path"); else KEEP+=("$path"); fi
+        done < <(gsettings get "$CIN_SCHEMA" custom-keybindings 2>/dev/null \
+                 | tr -d "[]' " | tr ',' '\n')
+        if [ "${#DROP[@]}" -gt 0 ]; then
+            list="["
+            for p in "${KEEP[@]:-}"; do
+                [ -n "$p" ] || continue
+                [ "$list" != "[" ] && list="$list, "
+                list="$list'$p'"
+            done
+            gsettings set "$CIN_SCHEMA" custom-keybindings "$list]"
+            if command -v dconf >/dev/null 2>&1; then
+                for p in "${DROP[@]}"; do
+                    dconf reset -f "$p" 2>/dev/null || true
+                done
+            fi
+            info "Cinnamon-Tastenkürzel entfernt."
+        fi
+    fi
+fi
+
+if [ "$PURGE" = "1" ] && command -v xfconf-query >/dev/null 2>&1 \
+        && xfconf-query -c xfce4-keyboard-shortcuts -l >/dev/null 2>&1; then
+    for mod in "<Super>q" "<Alt>q"; do
+        if xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/$mod" -r 2>/dev/null; then
+            info "XFCE-Tastenkürzel $mod entfernt."
+        fi
+    done
+fi
+
+if [ "$PURGE" = "1" ] && grep -q "linux-assistant" ~/.config/khotkeysrc 2>/dev/null; then
+    info "Hinweis: in ~/.config/khotkeysrc liegt noch ein KDE-Kürzel — bitte im KDE-Kurzbefehl-Editor entfernen."
+fi
+
 step "Fertig"
 linux-assistant --version || true
 echo
 echo "Starten:  linux-assistant   (oder über das Anwendungsmenü)"
-echo "Kürzel:   Super+Q, sobald es die App beim ersten Start eingerichtet hat"
+# Alt+Q on Zorin, Ubuntu and Pop!_OS, where the desktop already owns Super+Q;
+# Super+Q elsewhere. Same rule as Linux.getHotkeyModifier().
+case "$(. /etc/os-release 2>/dev/null; echo "${ID:-} ${ID_LIKE:-}")" in
+    *zorin*|*ubuntu*|*pop*) SHORTCUT="Alt+Q" ;;
+    *) SHORTCUT="Super+Q" ;;
+esac
+echo "Kürzel:   $SHORTCUT, sobald es die App beim ersten Start eingerichtet hat"

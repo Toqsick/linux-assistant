@@ -3,6 +3,9 @@ import jessentials
 import jfiles
 import jfolders
 import os
+import subprocess
+
+import keybinding_files
 
 # Cinnamon ----------------------------------------------------------------------------------
 CUSTOM_KEYS_PARENT_SCHEMA_CINNAMON = "org.cinnamon.desktop.keybindings"
@@ -134,65 +137,55 @@ def add_linux_assistant_keybinding_gnome():
 
 def add_linux_assistant_keybinding_xfce():
     os.environ["DBUS_SESSION_BUS_ADDRESS"] = "unix:path=/run/user/" + str(os.getuid()) + "/bus"
-    os.system(f"xfconf-query -c xfce4-keyboard-shortcuts -p '/commands/custom/{KEY_MODIFIER}q' -n -t string -s linux-assistant")
-    #jessentials.run_command(f"xfconf-query -c xfce4-keyboard-shortcuts -p '/commands/custom/{KEY_MODIFIER}q' -n -t string -s linux-assistant")
+
+    # The key combination is part of the property path, so a run with a
+    # different modifier used to add a second binding instead of moving the
+    # first. Ours are found by value and removed before the new one is set.
+    listing = subprocess.run(
+        ["xfconf-query", "-c", "xfce4-keyboard-shortcuts", "-lv"],
+        capture_output=True, text=True, check=False,
+    ).stdout
+    wanted = f"/commands/custom/{KEY_MODIFIER}q"
+    for path in keybinding_files.xfce_properties_of_ours(listing):
+        if path == wanted:
+            continue
+        subprocess.run(
+            ["xfconf-query", "-c", "xfce4-keyboard-shortcuts", "-p", path, "-r"],
+            check=False,
+        )
+
+    result = subprocess.run(
+        ["xfconf-query", "-c", "xfce4-keyboard-shortcuts",
+         "-p", wanted, "-n", "-t", "string", "-s", "linux-assistant"],
+        check=False,
+    )
+    if result.returncode != 0:
+        # Same contract as the unknown-desktop case: exiting 0 here would
+        # make the app mark the hotkey as done and never retry.
+        jessentials.fail("xfconf-query could not create the shortcut.", 1)
 
 # KDE ----------------------------------------------------------------------------------
 # Keymodifier is always <Alt> here.
 
 def add_linux_assistant_keybinding_kde():
-    lines = jfiles.get_all_lines_from_file(jfolders.replace_tilde_to_home("~/.config/khotkeysrc"))
+    # KDE's own shortcut editor writes Alt+Q; the app tells the user the same
+    # (see Linux.getHotkeyModifier, which returns <Alt> for every KDE session).
+    key = "Alt+Q"
 
-    newDataNumber = -1
+    khotkeysrc = jfolders.replace_tilde_to_home("~/.config/khotkeysrc")
+    jfiles.write_lines_to_file(
+        khotkeysrc,
+        keybinding_files.kde_khotkeysrc(
+            jfiles.get_all_lines_from_file(khotkeysrc), key),
+    )
 
-    khotkeysrc_text = ""
-
-    for i in range(len(lines)):
-        if lines[i].strip() == "[Data]":
-            newDataNumber = int(lines[i+1].replace("DataCount=", "")) + 1
-            lines[i+1] = f"DataCount={newDataNumber}"
-
-        if lines[i].strip() == "[General]":
-            lines.insert(i, f"""[Data_{newDataNumber}]
-Comment=Open linux-assistant
-Enabled=true
-Name=linux-assistant
-Type=SIMPLE_ACTION_DATA
-
-[Data_{newDataNumber}Actions]
-ActionsCount=1
-
-[Data_{newDataNumber}Actions0]
-CommandURL=linux-assistant
-Type=COMMAND_URL
-
-[Data_{newDataNumber}Conditions]
-Comment=
-ConditionsCount=0
-
-[Data_{newDataNumber}Triggers]
-Comment=Simple_action
-TriggersCount=1
-
-[Data_{newDataNumber}Triggers0]
-Key=Alt+Q
-Type=SHORTCUT
-Uuid={{c3daee14-f3bd-49db-bb5f-0a31a4b7fa73}}
-""")
-            break     
-
-    jfiles.write_lines_to_file(jfolders.replace_tilde_to_home("~/.config/khotkeysrc"), lines)
-
-
-    lines = jfiles.get_all_lines_from_file(jfolders.replace_tilde_to_home("~/.config/kglobalshortcutsrc"))
-    for i in range(len(lines)):
-        if (lines[i].startswith("[khotkeys]")):
-            lines.insert(i+2, "{c3daee14-f3bd-49db-bb5f-0a31a4b7fa73}=Alt+Q,none,linux-assistant")
-            break
-    
-    jfiles.write_lines_to_file(jfolders.replace_tilde_to_home("~/.config/kglobalshortcutsrc"), lines)
-
-  
+    kglobalshortcutsrc = jfolders.replace_tilde_to_home(
+        "~/.config/kglobalshortcutsrc")
+    jfiles.write_lines_to_file(
+        kglobalshortcutsrc,
+        keybinding_files.kde_kglobalshortcutsrc(
+            jfiles.get_all_lines_from_file(kglobalshortcutsrc), key),
+    )
 
 
 def main():
@@ -218,8 +211,12 @@ def main():
     elif "kde" in desktop:
         add_linux_assistant_keybinding_kde()
     else:
-        print(f"No supported desktop found in XDG_CURRENT_DESKTOP='{desktop}', "
-              "no keyboard shortcut was registered.")
+        # Exit non-zero: the Dart side marks the hotkey done on success and
+        # never retries. A silent "nothing registered" left the shortcut
+        # dead forever on sessions of unlisted desktops.
+        jessentials.fail(
+            f"No supported desktop found in XDG_CURRENT_DESKTOP='{desktop}', "
+            "no keyboard shortcut was registered.", 1)
 
 if __name__ == "__main__":
     main()

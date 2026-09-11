@@ -1,5 +1,3 @@
-import 'dart:ui' show FontFeature;
-
 import 'package:flutter/material.dart';
 import 'package:linux_assistant/layouts/hermes_tokens.dart';
 import 'package:linux_assistant/widgets/hermes/hermes_badge.dart';

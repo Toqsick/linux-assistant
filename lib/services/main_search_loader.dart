@@ -50,10 +50,12 @@ class _MainSearchLoaderState extends State<MainSearchLoader> {
 
   /// Runs one index module, bounded so a hanging scan cannot wedge the loader.
   Future<void> _module(String name, Future<void> work) {
-    return work.timeout(
+    return work
+        .timeout(
       const Duration(seconds: 20),
       onTimeout: () => _onTimeoutOfSearchLoadingModule(name),
-    ).catchError((Object e) {
+    )
+        .catchError((Object e) {
       Logger().w("Loading $name failed: $e");
     });
   }
@@ -72,16 +74,17 @@ class _MainSearchLoaderState extends State<MainSearchLoader> {
 
     // List<Future<List<ActionEntry>>> futures = [];
 
-    // if (configHandler.getValueUnsafe("search_filter_basic_folders", true)) {
-    //   print("Loading basic folders");
-    //   futures.add(Linux.getAllFolderEntriesOfUser(context).timeout(
-    //       timeoutDuration,
-    //       onTimeout: () =>
-    //           _onTimeoutOfSearchLoadingModule("applicationEntries")));
-    //   // future1 = Linux.getAllFolderEntriesOfUser(context);
-    // }
+    unawaited(
+        // if (configHandler.getValueUnsafe("search_filter_basic_folders", true)) {
+        //   print("Loading basic folders");
+        //   futures.add(Linux.getAllFolderEntriesOfUser(context).timeout(
+        //       timeoutDuration,
+        //       onTimeout: () =>
+        //           _onTimeoutOfSearchLoadingModule("applicationEntries")));
+        //   // future1 = Linux.getAllFolderEntriesOfUser(context);
+        // }
 
-    ActionEntryListService.clearEntries();
+        ActionEntryListService.clearEntries());
 
     // These six run concurrently and are intentionally not awaited as a group:
     // the search box should appear immediately and fill in as results land.
@@ -102,8 +105,7 @@ class _MainSearchLoaderState extends State<MainSearchLoader> {
     // }
 
     if (configHandler.getValueUnsafe("search_filter_applications", true)) {
-      modules.add(
-          _module("applications", Linux.getAllAvailableApplications()));
+      modules.add(_module("applications", Linux.getAllAvailableApplications()));
     }
 
     // if (configHandler.getValueUnsafe(
@@ -193,7 +195,7 @@ class _MainSearchLoaderState extends State<MainSearchLoader> {
       // returnValue.entries.remove(entry);
       functionEntries.remove(entry);
     }
-    ActionEntryListService.addEntries(functionEntries);
+    await ActionEntryListService.addEntries(functionEntries);
     await configHandler.setValue("runFirstStartUp", false);
     await clearOldEntries;
   }

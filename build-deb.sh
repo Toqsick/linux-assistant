@@ -14,9 +14,14 @@ mkdir -p "$STAGE/DEBIAN"
 cp deb/DEBIAN/control "$STAGE/DEBIAN/control"
 
 # Build Linux Assistant
-chmod +x additional/python/run_script.py
+# The two privileged entry points are named in the polkit policy by path, so
+# pkexec has to be able to execute them directly.
+chmod +x additional/python/run_multiple_commands.py
+chmod +x additional/python/read_security_report.py
 flutter build linux
 cp -r additional build/linux/x64/release/bundle/
+# The runner's unit tests are not part of the product.
+rm -rf build/linux/x64/release/bundle/additional/python/tests
 cp version build/linux/x64/release/bundle/
 
 # Prepare deb files for packaging
@@ -35,14 +40,14 @@ cp linux-assistant.sh "$STAGE/usr/bin/linux-assistant"
 chmod +x "$STAGE/usr/bin/linux-assistant"
 chmod 755 "$STAGE/DEBIAN"
 
-# Estimate the installed size by summing the sizes of all files in the package
+# Version, Installed-Size and Architecture are generated, not tracked. The
+# checked-in control file used to carry Version and Installed-Size, and both
+# went stale; the Architecture field stayed a hardcoded amd64 even when
+# dpkg named the artifact arm64.
 SIZE=$(du -s "$STAGE" | cut -f1)
-sed -i "s/^Installed-Size: .*/Installed-Size: $SIZE/" "$STAGE/DEBIAN/control"
-
-# Match by field name, not by line number: the previous "2s/.*/..." overwrote
-# whatever happened to be on line two, so reordering control silently
-# destroyed a field.
-sed -i "s/^Version: .*/Version: $VERSION/" "$STAGE/DEBIAN/control"
+sed -i "/^Description:/i Version: $VERSION\nInstalled-Size: $SIZE" \
+  "$STAGE/DEBIAN/control"
+sed -i "s/^Architecture: .*/Architecture: $ARCH/" "$STAGE/DEBIAN/control"
 
 # Build deb package
 dpkg-deb --build -Zxz --root-owner-group "$STAGE"
