@@ -50,6 +50,49 @@ Bastis Ziel: interaktives Admin-Dashboard, in dem seine realen Workflows leben. 
 
 **Architektur-Regel für V0.9:** jedes Modul = Registry-Eintrag + eigener Service (Dart, isoliert testbar wie `SystemMonitorService`) + optional la-helper-Action. Kein Modul schreibt direkt Shell-Befehle in Widgets.
 
+## Feature-Tiers & QoL/n2h-Kandidaten
+
+Das Grundkonzept (`MANIFEST.md`, Stand 2026-09-11) gruppiert Features in drei
+Tiers: **Core** (Mission: täglicher Helfer + Admin-Aufgaben, breiter
+Distro-Support ist Pflicht, Bruch = Release-Blocker), **QoL** (Alltagskomfort,
+keine neuen Abhängigkeiten, darf auf Distros fehlen) und **n2h** (optionale
+Extras, kleiner Abhängigkeits-Fußabdruck, Security-Invariante unangetastet).
+Die Klassifikation aller 41 bestehenden Features steht in `features.csv`
+(Spalte `Category`: 20 Core / 17 QoL / 4 N2H).
+
+**Einordnung der V0.9-Module:** System Monitor P1 ist Core-nah, Backup-Status
+und Docker Watcher sind QoL; Hermes Gateway Manager, Kanban Watcher und
+Tokentelemetrie sind n2h (Basti-spezifische Integrationen).
+
+**Grenzfälle der Klassifikation:** Feedback → N2H (optional, kein
+Alltags-Workflow) · Multimedia-Codecs → QoL (Installationskomfort, kein Kern)
+· Passwort-Dialog → QoL (Admin-Komfort-Wrapper) · makeAdmin → Core (echte
+Admin-Aufgabe).
+
+### QoL-Kandidaten (neu)
+
+| Kandidat | Anknüpfung |
+|---|---|
+| Update-Benachrichtigung/Tray-Hinweis | Updater-Service existiert |
+| Aufräumen: Journal-Vakuum, APT-/Flatpak-Cache | über la-helper (#28) |
+| Boot-Zeit-Analyse | `systemd-analyze`, read-only |
+| Disk-Health/SMART-Tile | erweitert „Recognition of drive space utilization“ |
+| Systemd-Service-Manager-Screen | baut auf D-Bus SystemdService (#29) auf |
+| Timeshift-Status/Backup-Erinnerung | Security-/Health-Check-Umfeld |
+
+### n2h-Kandidaten (neu)
+
+| Kandidat | Anmerkung |
+|---|---|
+| Tray-Icon mit Quick-Actions | Tray-Support je Desktop uneinheitlich |
+| Clipboard-Historie | Wayland-restriktiv — bewusst n2h |
+| WLAN-/Netzwerk-Info-Screen | read-only |
+| Audio-Geräte-Umschalter | PipeWire/WirePlumber-Abhängigkeit prüfen |
+| Rechnen/Einheiten in der Suche | offline, keine neuen Abhängigkeiten |
+
+Kandidaten werden erst nach dem V0.8.X-Härtungsblock angetastet — das Prinzip
+„Verifizieren → Härten → Erweitern“ bleibt.
+
 ## Was aus PR #24 / offenen Issues aufgeht
 
 - **PR #24 (Implementierungsplan v0.8.5):** ersetzt durch dieses Dokument — schließen mit Verweis. Inhaltlich aufgegangen in V0.8.0/V0.8.X.
