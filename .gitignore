@@ -58,3 +58,6 @@ linux-assistant-bundle/
 
 # superpowers SDD scratch (progress ledger)
 .superpowers/
+
+# ZCode session plans (agent scratch)
+.zcode/
